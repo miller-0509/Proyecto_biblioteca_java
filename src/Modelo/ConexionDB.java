@@ -26,7 +26,7 @@ public class ConexionDB {
                     PASSWORD
             );
 
-            System.out.println("Conexión exitosa");
+            System.out.println("Conexión exitosaaaaaaaaaaaa");
 
         } catch (ClassNotFoundException e) {
 
