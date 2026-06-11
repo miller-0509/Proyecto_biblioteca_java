@@ -5,37 +5,40 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConexionDB {
-    
-    public static Connection conexion;  
-    
-private ConexionDB() {
+
+    private static final String URL =
+            "jdbc:postgresql://144.91.74.225:5434/master_db";
+
+    private static final String USER = "admin";
+    private static final String PASSWORD = "12345678Ab";
+
+    public static Connection conectar() {
+
+        Connection con = null;
+
         try {
-            String driverBD  = "com.mysql.cj.jdbc.Driver";
-            String urlBD     = "jdbc:mysql://144.91.74.225:3307/sistemaclientes";
-            String usuarioBD = "admin";
-            String claveBD   = "12345678";
-            Class.forName(driverBD);
-            conexion = DriverManager.getConnection(urlBD, usuarioBD, claveBD);
-        } catch (ClassNotFoundException ex) {
-            System.err.println("No encuentra el driver:" + ex.getMessage());
-        } catch (SQLException ex) {
-            System.err.println("Error al conectarme:" + ex.getMessage());
+
+            Class.forName("org.postgresql.Driver");
+
+            con = DriverManager.getConnection(
+                    URL,
+                    USER,
+                    PASSWORD
+            );
+
+            System.out.println("Conexión exitosa");
+
+        } catch (ClassNotFoundException e) {
+
+            System.out.println("Driver PostgreSQL no encontrado");
+            e.printStackTrace();
+
+        } catch (SQLException e) {
+
+            System.out.println("Error al conectar");
+            e.printStackTrace();
         }
-    }
 
-    public static void desconectar() {
-        try {
-            conexion.close();
-        } catch (SQLException ex) {
-            System.err.println("Error al desconectarme" + ex.getMessage());
-        }
-    }
-
-    public static ConexionDB getInstance() {
-        return ConexionDBHolder.INSTANCE;
-    }
-
-    private static class ConexionDBHolder {
-        private static final ConexionDB INSTANCE = new ConexionDB();
+        return con;
     }
 }
