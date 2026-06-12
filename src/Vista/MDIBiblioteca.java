@@ -4,10 +4,11 @@
  */
 package Vista;
 
-import javax.imageio.ImageIO;
-import java.io.IOException;
+import java.awt.Font;
+import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.border.SoftBevelBorder;
 
 /**
  *
@@ -19,29 +20,52 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     
     public MDIBiblioteca() {
         initComponents();
-        cargarImagenFondo();
+        reorganizarLayout();
+        ajustarApariencia();
+        setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
     }
-    
-    private void cargarImagenFondo() {
-        try {
-            ImageIcon icon = new ImageIcon(getClass().getResource("/imagenes/fondo.jpg"));
-            JLabel lblFondo = new JLabel(icon) {
-                @Override
-                public void paintComponent(java.awt.Graphics g) {
+
+    private void ajustarApariencia() {
+        jLabel1.setFont(jLabel1.getFont().deriveFont(Font.BOLD, 20f));
+        jLabel2.setFont(jLabel2.getFont().deriveFont(16f));
+
+        jPanel1.setBorder(BorderFactory.createCompoundBorder(
+                new SoftBevelBorder(javax.swing.border.BevelBorder.RAISED),
+                BorderFactory.createEmptyBorder(15, 30, 15, 30)
+        ));
+    }
+
+    private void reorganizarLayout() {
+        JLabel lblFondo = new JLabel() {
+            @Override
+            public void paintComponent(java.awt.Graphics g) {
+                if (getIcon() != null) {
                     g.drawImage(((ImageIcon) getIcon()).getImage(), 0, 0, getWidth(), getHeight(), this);
                 }
-            };
-            lblFondo.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
-            escritorio.add(lblFondo, Integer.valueOf(-1000));
-            escritorio.addComponentListener(new java.awt.event.ComponentAdapter() {
-                @Override
-                public void componentResized(java.awt.event.ComponentEvent e) {
-                    lblFondo.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
-                }
-            });
-        } catch (Exception e) {
-            System.out.println("Error al cargar fondo: " + e.getMessage());
+            }
+        };
+
+        java.net.URL imgURL = getClass().getResource("/imagenes/fondo.jpg");
+        if (imgURL != null) {
+            lblFondo.setIcon(new ImageIcon(imgURL));
         }
+
+        javax.swing.JPanel centerPanel = new javax.swing.JPanel(new java.awt.GridBagLayout());
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        gbc.fill = java.awt.GridBagConstraints.BOTH;
+        centerPanel.add(lblFondo, gbc);
+        escritorio.setOpaque(false);
+        centerPanel.add(escritorio, gbc);
+
+        java.awt.Container content = getContentPane();
+        content.removeAll();
+        content.setLayout(new java.awt.BorderLayout());
+        content.add(jPanel1, java.awt.BorderLayout.NORTH);
+        content.add(centerPanel, java.awt.BorderLayout.CENTER);
     }
 
     /**
@@ -54,9 +78,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     private void initComponents() {
 
         escritorio = new javax.swing.JDesktopPane();
-        jPanel1 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         openMenuItem = new javax.swing.JMenuItem();
@@ -67,36 +88,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         jMenu5 = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
-        jPanel1.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
-
-        jLabel1.setText("¡Hola, Super Administrador! Bienvenido a Control de elementos de almacén y préstamo de equipos de biblioteca");
-
-        jLabel2.setText("Tu plataforma de gestión de equipos y préstamos.");
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 267, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(158, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel2)
-                .addContainerGap(14, Short.MAX_VALUE))
-        );
-
-        escritorio.add(jPanel1);
-        jPanel1.setBounds(30, 10, 770, 70);
 
         fileMenu.setMnemonic('f');
         fileMenu.setText("Equipos");
@@ -181,14 +172,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JDesktopPane escritorio;
     private javax.swing.JMenu fileMenu;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
-    private javax.swing.JPanel jPanel1;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JMenuItem openMenuItem;
     // End of variables declaration//GEN-END:variables
