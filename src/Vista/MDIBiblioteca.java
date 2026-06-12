@@ -10,13 +10,13 @@ package Vista;
  */
 public class MDIBiblioteca extends javax.swing.JFrame {
     
-FRMLogin fLogin;
+
 
     
     public MDIBiblioteca() {
         initComponents();
-        fLogin = new FRMLogin();
-        escritorio.add(fLogin);
+        
+        
     }
 
     /**
@@ -62,7 +62,7 @@ FRMLogin fLogin;
     }// </editor-fold>//GEN-END:initComponents
 
     private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-        fLogin.setVisible(true);
+        
     }//GEN-LAST:event_openMenuItemActionPerformed
 
     /**
