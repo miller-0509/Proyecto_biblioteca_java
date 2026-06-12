@@ -41,4 +41,8 @@ public class ConexionDB {
 
         return con;
     }
+
+    public static void getInstance() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }
