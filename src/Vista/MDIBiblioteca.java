@@ -10,12 +10,10 @@ package Vista;
  */
 public class MDIBiblioteca extends javax.swing.JFrame {
     
-FRMLogin fLogin;
 
     
     public MDIBiblioteca() {
         initComponents();
-        fLogin = new FRMLogin();
         escritorio.add(fLogin);
     }
 
