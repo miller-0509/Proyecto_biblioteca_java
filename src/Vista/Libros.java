@@ -31,12 +31,14 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.JInternalFrame;
 import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
@@ -50,7 +52,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
 
-public class Equipos extends JInternalFrame {
+public class Libros extends JInternalFrame {
 
     private static final Color SENA_GREEN = new Color(46, 170, 84);
     private static final Color SENA_GREEN_DARK = new Color(24, 123, 61);
@@ -64,12 +66,12 @@ public class Equipos extends JInternalFrame {
 
     private PlaceholderTextField txtBuscar;
     private JComboBox<String> cmbEstado;
-    private JComboBox<String> cmbTipo;
-    private JTable tablaEquipos;
-    private DefaultTableModel modeloEquipos;
+    private JComboBox<String> cmbGenero;
+    private JTable tablaLibros;
+    private DefaultTableModel modeloLibros;
     private TableRowSorter<DefaultTableModel> filtroTabla;
 
-    public Equipos() {
+    public Libros() {
         initComponents();
         construirVista();
         cargarDatosDemo();
@@ -77,7 +79,7 @@ public class Equipos extends JInternalFrame {
     }
 
     private void construirVista() {
-        setTitle("Gestión de Equipos");
+        setTitle("Gestión de Libros");
         setClosable(true);
         setMaximizable(true);
         setIconifiable(true);
@@ -102,11 +104,11 @@ public class Equipos extends JInternalFrame {
         textos.setOpaque(false);
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
 
-        JLabel titulo = new JLabel("Gestión de Equipos");
+        JLabel titulo = new JLabel("Gestión de Libros");
         titulo.setFont(new Font("SansSerif", Font.BOLD, 26));
         titulo.setForeground(TEXT_DARK);
 
-        JLabel subtitulo = new JLabel("Inventario, estados y acciones rápidas de los equipos del sistema.");
+        JLabel subtitulo = new JLabel("Consulta, registra y administra el inventario bibliográfico del sistema.");
         subtitulo.setFont(new Font("SansSerif", Font.PLAIN, 13));
         subtitulo.setForeground(TEXT_SOFT);
 
@@ -114,8 +116,8 @@ public class Equipos extends JInternalFrame {
         textos.add(Box.createVerticalStrut(5));
         textos.add(subtitulo);
 
-        JButton btnRegistrar = crearBotonPrincipal("Registrar Equipo", new PlusIcon(13, Color.WHITE));
-        btnRegistrar.setPreferredSize(new Dimension(178, 42));
+        JButton btnRegistrar = crearBotonPrincipal("Registrar Libro", new PlusIcon(13, Color.WHITE));
+        btnRegistrar.setPreferredSize(new Dimension(172, 42));
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
@@ -132,7 +134,7 @@ public class Equipos extends JInternalFrame {
         panel.setBorder(new EmptyBorder(18, 18, 18, 18));
 
         panel.add(crearBarraFiltros(), BorderLayout.NORTH);
-        panel.add(crearTablaEquipos(), BorderLayout.CENTER);
+        panel.add(crearTablaLibros(), BorderLayout.CENTER);
         return panel;
     }
 
@@ -140,23 +142,26 @@ public class Equipos extends JInternalFrame {
         JPanel barra = new JPanel(new GridBagLayout());
         barra.setOpaque(false);
 
-        txtBuscar = new PlaceholderTextField("Nombre, serie o marca...");
-        txtBuscar.setPreferredSize(new Dimension(320, 42));
+        txtBuscar = new PlaceholderTextField("Nombre, serie o autor...");
+        txtBuscar.setPreferredSize(new Dimension(330, 42));
         estilizarCampoTexto(txtBuscar);
 
         cmbEstado = crearCombo(new String[]{
             "Todos los estados",
             "Disponible",
-            "En préstamo",
+            "Prestado",
+            "Reservado",
             "En mantenimiento"
         });
 
-        cmbTipo = crearCombo(new String[]{
-            "Todos los tipos",
-            "Monitor",
-            "Proyector",
-            "Teclado",
-            "Tablet",
+        cmbGenero = crearCombo(new String[]{
+            "Todos los géneros",
+            "Novela",
+            "Ciencia ficción",
+            "Fábula",
+            "Historia",
+            "Tecnología",
+            "Educación",
             "Otros"
         });
 
@@ -165,7 +170,7 @@ public class Equipos extends JInternalFrame {
         btnBuscar.addActionListener(evt -> aplicarFiltros());
         txtBuscar.addActionListener(evt -> aplicarFiltros());
         cmbEstado.addActionListener(evt -> aplicarFiltros());
-        cmbTipo.addActionListener(evt -> aplicarFiltros());
+        cmbGenero.addActionListener(evt -> aplicarFiltros());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -174,7 +179,7 @@ public class Equipos extends JInternalFrame {
 
         gbc.gridx = 0;
         gbc.weightx = 1.0;
-        barra.add(crearCampoConEtiqueta("Buscar equipo", txtBuscar), gbc);
+        barra.add(crearCampoConEtiqueta("Buscar libro", txtBuscar), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.28;
@@ -182,7 +187,7 @@ public class Equipos extends JInternalFrame {
 
         gbc.gridx = 2;
         gbc.weightx = 0.28;
-        barra.add(crearCampoConEtiqueta("Tipo", cmbTipo), gbc);
+        barra.add(crearCampoConEtiqueta("Género", cmbGenero), gbc);
 
         gbc.gridx = 3;
         gbc.weightx = 0.0;
@@ -196,7 +201,7 @@ public class Equipos extends JInternalFrame {
         JPanel panel = new JPanel(new BorderLayout(0, 7));
         panel.setOpaque(false);
 
-        JLabel label = new JLabel(etiqueta);
+        JLabel label = new JLabel(etiqueta.toUpperCase());
         label.setFont(new Font("SansSerif", Font.BOLD, 12));
         label.setForeground(TEXT_SOFT);
 
@@ -205,9 +210,9 @@ public class Equipos extends JInternalFrame {
         return panel;
     }
 
-    private JScrollPane crearTablaEquipos() {
-        modeloEquipos = new DefaultTableModel(
-                new Object[]{"ID", "Nombre", "Tipo", "Número de Serie", "Estado", "Ubicación", "Acciones", "Marca"},
+    private JScrollPane crearTablaLibros() {
+        modeloLibros = new DefaultTableModel(
+                new Object[]{"ID", "Título", "Género", "Código Único", "Estado", "Ubicación", "Acciones", "Autor"},
                 0
         ) {
             @Override
@@ -216,39 +221,43 @@ public class Equipos extends JInternalFrame {
             }
         };
 
-        tablaEquipos = new JTable(modeloEquipos);
-        filtroTabla = new TableRowSorter<>(modeloEquipos);
-        tablaEquipos.setRowSorter(filtroTabla);
+        tablaLibros = new JTable(modeloLibros);
+        filtroTabla = new TableRowSorter<>(modeloLibros);
+        tablaLibros.setRowSorter(filtroTabla);
 
-        tablaEquipos.setRowHeight(54);
-        tablaEquipos.setShowVerticalLines(false);
-        tablaEquipos.setShowHorizontalLines(true);
-        tablaEquipos.setGridColor(new Color(235, 239, 244));
-        tablaEquipos.setIntercellSpacing(new Dimension(0, 0));
-        tablaEquipos.setSelectionBackground(new Color(231, 246, 236));
-        tablaEquipos.setSelectionForeground(TEXT_DARK);
-        tablaEquipos.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        tablaEquipos.setForeground(TEXT_DARK);
-        tablaEquipos.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        tablaEquipos.setFillsViewportHeight(true);
+        tablaLibros.setRowHeight(74);
+        tablaLibros.setShowVerticalLines(false);
+        tablaLibros.setShowHorizontalLines(true);
+        tablaLibros.setGridColor(new Color(235, 239, 244));
+        tablaLibros.setIntercellSpacing(new Dimension(0, 0));
+        tablaLibros.setSelectionBackground(new Color(231, 246, 236));
+        tablaLibros.setSelectionForeground(TEXT_DARK);
+        tablaLibros.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        tablaLibros.setForeground(TEXT_DARK);
+        tablaLibros.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        tablaLibros.setFillsViewportHeight(true);
         instalarHoverTabla();
 
-        JTableHeader header = tablaEquipos.getTableHeader();
+        JTableHeader header = tablaLibros.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 44));
         header.setFont(new Font("SansSerif", Font.BOLD, 12));
         header.setForeground(TEXT_SOFT);
         header.setBackground(new Color(247, 249, 251));
-        header.setBorder(new MatteBorder(0, 0, 1, 0, BORDER));
+        header.setBorder(new MatteBorder(0, 0, 1, 0, new Color(194, 239, 207)));
         header.setReorderingAllowed(false);
 
-        tablaEquipos.setDefaultRenderer(Object.class, new ZebraRenderer());
-        tablaEquipos.getColumnModel().getColumn(4).setCellRenderer(new EstadoRenderer());
-        tablaEquipos.getColumnModel().getColumn(6).setCellRenderer(new AccionesRenderer());
-        tablaEquipos.getColumnModel().getColumn(6).setCellEditor(new AccionesEditor());
-        tablaEquipos.removeColumn(tablaEquipos.getColumnModel().getColumn(7));
+        tablaLibros.setDefaultRenderer(Object.class, new ZebraRenderer());
+        tablaLibros.getColumnModel().getColumn(0).setCellRenderer(new IdRenderer());
+        tablaLibros.getColumnModel().getColumn(1).setCellRenderer(new TituloRenderer());
+        tablaLibros.getColumnModel().getColumn(2).setCellRenderer(new GeneroRenderer());
+        tablaLibros.getColumnModel().getColumn(3).setCellRenderer(new CodigoRenderer());
+        tablaLibros.getColumnModel().getColumn(4).setCellRenderer(new EstadoRenderer());
+        tablaLibros.getColumnModel().getColumn(6).setCellRenderer(new AccionesRenderer());
+        tablaLibros.getColumnModel().getColumn(6).setCellEditor(new AccionesEditor());
+        tablaLibros.removeColumn(tablaLibros.getColumnModel().getColumn(7));
         configurarAnchosTabla();
 
-        JScrollPane scroll = new JScrollPane(tablaEquipos);
+        JScrollPane scroll = new JScrollPane(tablaLibros);
         scroll.setBorder(BorderFactory.createLineBorder(BORDER));
         scroll.getViewport().setBackground(Color.WHITE);
         scroll.setBackground(Color.WHITE);
@@ -256,47 +265,47 @@ public class Equipos extends JInternalFrame {
     }
 
     private void configurarAnchosTabla() {
-        TableColumnModel columnas = tablaEquipos.getColumnModel();
-        columnas.getColumn(0).setMinWidth(52);
-        columnas.getColumn(0).setPreferredWidth(58);
-        columnas.getColumn(1).setPreferredWidth(190);
-        columnas.getColumn(2).setPreferredWidth(120);
-        columnas.getColumn(3).setPreferredWidth(160);
-        columnas.getColumn(4).setPreferredWidth(140);
-        columnas.getColumn(5).setPreferredWidth(150);
-        columnas.getColumn(6).setMinWidth(120);
-        columnas.getColumn(6).setPreferredWidth(132);
+        TableColumnModel columnas = tablaLibros.getColumnModel();
+        columnas.getColumn(0).setMinWidth(58);
+        columnas.getColumn(0).setPreferredWidth(70);
+        columnas.getColumn(1).setPreferredWidth(230);
+        columnas.getColumn(2).setPreferredWidth(220);
+        columnas.getColumn(3).setPreferredWidth(170);
+        columnas.getColumn(4).setPreferredWidth(145);
+        columnas.getColumn(5).setPreferredWidth(145);
+        columnas.getColumn(6).setMinWidth(128);
+        columnas.getColumn(6).setPreferredWidth(142);
     }
 
     private void instalarHoverTabla() {
-        tablaEquipos.addMouseMotionListener(new MouseMotionAdapter() {
+        tablaLibros.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                int row = tablaEquipos.rowAtPoint(e.getPoint());
-                Object actual = tablaEquipos.getClientProperty("hoverRow");
+                int row = tablaLibros.rowAtPoint(e.getPoint());
+                Object actual = tablaLibros.getClientProperty("hoverRow");
                 if (!(actual instanceof Integer) || ((Integer) actual) != row) {
-                    tablaEquipos.putClientProperty("hoverRow", row);
-                    tablaEquipos.repaint();
+                    tablaLibros.putClientProperty("hoverRow", row);
+                    tablaLibros.repaint();
                 }
             }
         });
 
-        tablaEquipos.addMouseListener(new MouseAdapter() {
+        tablaLibros.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseExited(MouseEvent e) {
-                tablaEquipos.putClientProperty("hoverRow", -1);
-                tablaEquipos.repaint();
+                tablaLibros.putClientProperty("hoverRow", -1);
+                tablaLibros.repaint();
             }
         });
     }
 
     private void cargarDatosDemo() {
-        modeloEquipos.addRow(new Object[]{"001", "Video Beam Epson X49", "Proyector", "EP-X49-2026", "Disponible", "Biblioteca", "", "Epson"});
-        modeloEquipos.addRow(new Object[]{"002", "Tablet Samsung A9", "Tablet", "TB-A9-1842", "En préstamo", "Sala TIC", "", "Samsung"});
-        modeloEquipos.addRow(new Object[]{"003", "Monitor Lenovo 24", "Monitor", "MN-LNV-2441", "Disponible", "Almacén", "", "Lenovo"});
-        modeloEquipos.addRow(new Object[]{"004", "Teclado Logitech K120", "Teclado", "TK-LG-7720", "En mantenimiento", "Soporte", "", "Logitech"});
-        modeloEquipos.addRow(new Object[]{"005", "Tablet Lenovo M10", "Tablet", "TB-M10-3288", "No disponible", "Coordinación", "", "Lenovo"});
-        modeloEquipos.addRow(new Object[]{"006", "Proyector BenQ MX560", "Proyector", "BQ-MX-5602", "Disponible", "Auditorio", "", "BenQ"});
+        modeloLibros.addRow(new Object[]{"#3", "Neuromancer", "CIENCIA FICCIÓN / CYBERPUNK", "LIB-CYB-78421-XA", "Disponible", "Biblioteca", "", "William Gibson"});
+        modeloLibros.addRow(new Object[]{"#2", "El principito", "FÁBULA", "ZQW5428", "Disponible", "Ambiente 208", "", "Antoine de Saint-Exupéry"});
+        modeloLibros.addRow(new Object[]{"#4", "El coronel no tiene quien le escriba", "NOVELA / REALISMO MÁGICO", "XOEW83XL01", "Disponible", "Biblioteca", "", "Gabriel García Márquez"});
+        modeloLibros.addRow(new Object[]{"#1", "Cien años de soledad", "NOVELA / REALISMO MÁGICO", "CVB34567", "Prestado", "Biblioteca", "", "Gabriel García Márquez"});
+        modeloLibros.addRow(new Object[]{"#5", "Clean Code", "TECNOLOGÍA", "LIB-TEC-90218-CC", "Reservado", "Sala de lectura", "", "Robert C. Martin"});
+        modeloLibros.addRow(new Object[]{"#6", "Historia mínima de Colombia", "HISTORIA", "LIB-HIS-11028-CO", "En mantenimiento", "Restauración", "", "Jorge Orlando Melo"});
     }
 
     private void aplicarFiltros() {
@@ -317,9 +326,9 @@ public class Equipos extends JInternalFrame {
             filtros.add(RowFilter.regexFilter("^" + Pattern.quote(estado) + "$", 4));
         }
 
-        String tipo = cmbTipo == null ? "Todos los tipos" : String.valueOf(cmbTipo.getSelectedItem());
-        if (!"Todos los tipos".equals(tipo)) {
-            filtros.add(RowFilter.regexFilter("^" + Pattern.quote(tipo) + "$", 2));
+        String genero = cmbGenero == null ? "Todos los géneros" : String.valueOf(cmbGenero.getSelectedItem());
+        if (!"Todos los géneros".equals(genero)) {
+            filtros.add(RowFilter.regexFilter("(?i)" + Pattern.quote(genero), 2));
         }
 
         if (filtros.isEmpty()) {
@@ -327,23 +336,13 @@ public class Equipos extends JInternalFrame {
             return;
         }
 
-        if (busqueda.length() > 0 && !txtBuscar.isShowingPlaceholder()) {
-            RowFilter<Object, Object> texto = filtros.get(0);
-            List<RowFilter<Object, Object>> finales = new ArrayList<>();
-            finales.add(texto);
-            for (int i = 1; i < filtros.size(); i++) {
-                finales.add(filtros.get(i));
-            }
-            filtroTabla.setRowFilter(RowFilter.andFilter(finales));
-        } else {
-            filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
-        }
+        filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
     }
 
     private JComboBox<String> crearCombo(String[] opciones) {
         JComboBox<String> combo = new JComboBox<>();
         combo.setModel(new DefaultComboBoxModel<>(opciones));
-        combo.setPreferredSize(new Dimension(180, 42));
+        combo.setPreferredSize(new Dimension(190, 42));
         combo.setFont(new Font("SansSerif", Font.PLAIN, 13));
         combo.setForeground(TEXT_DARK);
         combo.setBackground(Color.WHITE);
@@ -383,13 +382,24 @@ public class Equipos extends JInternalFrame {
                 new EmptyBorder(10, 15, 10, 15)
         ));
         boton.setUI(new BasicButtonUI());
+        boton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                boton.setBackground(SENA_GREEN_DARK);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                boton.setBackground(SENA_GREEN);
+            }
+        });
         return boton;
     }
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
         setBorder(BorderFactory.createEmptyBorder());
-        setPreferredSize(new Dimension(1060, 680));
+        setPreferredSize(new Dimension(1120, 720));
     }
 
     private static final class ZebraRenderer extends DefaultTableCellRenderer {
@@ -408,11 +418,103 @@ public class Equipos extends JInternalFrame {
                 int column) {
 
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            c.setFont(new Font("SansSerif", column == 1 ? Font.BOLD : Font.PLAIN, 13));
+            c.setFont(new Font("SansSerif", Font.PLAIN, 13));
             setForeground(TEXT_DARK);
             setHorizontalAlignment(column == 0 ? SwingConstants.CENTER : SwingConstants.LEFT);
             setBackground(resolverFondoFila(table, row, isSelected));
             return c;
+        }
+    }
+
+    private static final class IdRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 23));
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.add(new BadgeLabel(String.valueOf(value), new Color(248, 250, 252), SENA_GREEN_DARK));
+            return panel;
+        }
+    }
+
+    private static final class TituloRenderer implements TableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            int modelRow = table.convertRowIndexToModel(row);
+            String autor = String.valueOf(table.getModel().getValueAt(modelRow, 7));
+
+            JPanel panel = new JPanel();
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.setBorder(new EmptyBorder(12, 12, 10, 12));
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+            JLabel titulo = new JLabel(String.valueOf(value));
+            titulo.setFont(new Font("SansSerif", Font.BOLD, 14));
+            titulo.setForeground(TEXT_DARK);
+
+            JLabel autorLabel = new JLabel(autor);
+            autorLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            autorLabel.setForeground(TEXT_SOFT);
+
+            panel.add(titulo);
+            panel.add(Box.createVerticalStrut(5));
+            panel.add(autorLabel);
+            return panel;
+        }
+    }
+
+    private static final class GeneroRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 23));
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.add(new BadgeLabel(String.valueOf(value), new Color(240, 253, 244), SENA_GREEN));
+            return panel;
+        }
+    }
+
+    private static final class CodigoRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 24));
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.add(new CodeLabel(String.valueOf(value)));
+            return panel;
         }
     }
 
@@ -427,7 +529,7 @@ public class Equipos extends JInternalFrame {
                 int row,
                 int column) {
 
-            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 13));
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 23));
             panel.setOpaque(true);
             panel.setBackground(resolverFondoFila(table, row, isSelected));
 
@@ -435,7 +537,7 @@ public class Equipos extends JInternalFrame {
             Color fondo = new Color(220, 252, 231);
             Color texto = new Color(21, 128, 61);
 
-            if ("En préstamo".equalsIgnoreCase(estado) || "Solicitado".equalsIgnoreCase(estado)) {
+            if ("Prestado".equalsIgnoreCase(estado) || "Reservado".equalsIgnoreCase(estado)) {
                 fondo = new Color(254, 243, 199);
                 texto = new Color(146, 64, 14);
             } else if ("No disponible".equalsIgnoreCase(estado) || "En mantenimiento".equalsIgnoreCase(estado)) {
@@ -443,8 +545,7 @@ public class Equipos extends JInternalFrame {
                 texto = new Color(185, 28, 28);
             }
 
-            BadgeLabel badge = new BadgeLabel(estado, fondo, texto);
-            panel.add(badge);
+            panel.add(new BadgeLabel(estado.toUpperCase(), fondo, texto));
             return panel;
         }
     }
@@ -459,8 +560,7 @@ public class Equipos extends JInternalFrame {
                 boolean hasFocus,
                 int row,
                 int column) {
-            JPanel panel = crearPanelAcciones(resolverFondoFila(table, row, isSelected));
-            return panel;
+            return crearPanelAcciones(resolverFondoFila(table, row, isSelected));
         }
     }
 
@@ -497,26 +597,45 @@ public class Equipos extends JInternalFrame {
     }
 
     private static JPanel crearPanelAcciones(Color fondo) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 9));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 21));
         panel.setOpaque(true);
         panel.setBackground(fondo);
 
         JButton ver = crearBotonAccion("Ver", new EyeIcon(15, SENA_GREEN_DARK));
         JButton mas = crearBotonIcono(new DotsIcon(15, TEXT_SOFT));
+        JPopupMenu menu = crearMenuAcciones();
+        mas.addActionListener(evt -> menu.show(mas, 0, mas.getHeight()));
 
         panel.add(ver);
         panel.add(mas);
         return panel;
     }
 
+    private static JPopupMenu crearMenuAcciones() {
+        JPopupMenu menu = new JPopupMenu();
+        menu.setBorder(BorderFactory.createLineBorder(BORDER));
+        menu.add(crearItemMenu("Ver"));
+        menu.add(crearItemMenu("Editar"));
+        menu.add(crearItemMenu("Eliminar"));
+        return menu;
+    }
+
+    private static JMenuItem crearItemMenu(String texto) {
+        JMenuItem item = new JMenuItem(texto);
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground("Eliminar".equals(texto) ? new Color(185, 28, 28) : TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        return item;
+    }
+
     private static JButton crearBotonAccion(String texto, Icon icono) {
         JButton boton = new JButton(texto, icono);
         boton.setFont(new Font("SansSerif", Font.BOLD, 12));
         boton.setForeground(SENA_GREEN_DARK);
-        boton.setBackground(SENA_GREEN_SOFT);
+        boton.setBackground(Color.WHITE);
         boton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(188, 232, 201)),
-                new EmptyBorder(7, 10, 7, 10)
+                BorderFactory.createLineBorder(SENA_GREEN),
+                new EmptyBorder(9, 13, 9, 13)
         ));
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -526,7 +645,7 @@ public class Equipos extends JInternalFrame {
 
     private static JButton crearBotonIcono(Icon icono) {
         JButton boton = new JButton(icono);
-        boton.setPreferredSize(new Dimension(34, 32));
+        boton.setPreferredSize(new Dimension(36, 36));
         boton.setBackground(Color.WHITE);
         boton.setBorder(BorderFactory.createLineBorder(BORDER));
         boton.setFocusPainted(false);
@@ -537,11 +656,9 @@ public class Equipos extends JInternalFrame {
 
     private static final class PlaceholderTextField extends JTextField {
 
-        private final String placeholder;
         private boolean showingPlaceholder = true;
 
         private PlaceholderTextField(String placeholder) {
-            this.placeholder = placeholder;
             setText(placeholder);
             setForeground(TEXT_SOFT);
             addFocusListener(new FocusAdapter() {
@@ -570,7 +687,7 @@ public class Equipos extends JInternalFrame {
         }
     }
 
-    private static final class BadgeLabel extends JLabel {
+    private static class BadgeLabel extends JLabel {
 
         private final Color fill;
 
@@ -594,6 +711,14 @@ public class Equipos extends JInternalFrame {
                 g2.dispose();
             }
             super.paintComponent(g);
+        }
+    }
+
+    private static final class CodeLabel extends BadgeLabel {
+
+        private CodeLabel(String text) {
+            super(text, new Color(248, 250, 252), SENA_GREEN_DARK);
+            setFont(new Font("Monospaced", Font.PLAIN, 12));
         }
     }
 
