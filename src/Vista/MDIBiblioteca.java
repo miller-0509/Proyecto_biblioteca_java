@@ -14,7 +14,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     
     public MDIBiblioteca() {
         initComponents();
-        escritorio.add(fLogin);
     }
 
     /**
@@ -60,7 +59,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-        fLogin.setVisible(true);
+
     }//GEN-LAST:event_openMenuItemActionPerformed
 
     /**
