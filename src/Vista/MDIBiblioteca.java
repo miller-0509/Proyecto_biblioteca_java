@@ -4,9 +4,10 @@
  */
 package Vista;
 
-import java.awt.Image;
 import javax.imageio.ImageIO;
 import java.io.IOException;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 
 /**
  *
@@ -23,13 +24,23 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     
     private void cargarImagenFondo() {
         try {
-            Image img = ImageIO.read(getClass().getResource("/imagenes/fondo.jpg"));
-            if (img != null) {
-                escritorio.setImagenFondo(img);
-                escritorio.repaint();
-            }
-        } catch (IOException e) {
-            System.out.println("No se encontro la imagen de fondo: " + e.getMessage());
+            ImageIcon icon = new ImageIcon(getClass().getResource("/imagenes/fondo.jpg"));
+            JLabel lblFondo = new JLabel(icon) {
+                @Override
+                public void paintComponent(java.awt.Graphics g) {
+                    g.drawImage(((ImageIcon) getIcon()).getImage(), 0, 0, getWidth(), getHeight(), this);
+                }
+            };
+            lblFondo.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
+            escritorio.add(lblFondo, Integer.valueOf(-1000));
+            escritorio.addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override
+                public void componentResized(java.awt.event.ComponentEvent e) {
+                    lblFondo.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("Error al cargar fondo: " + e.getMessage());
         }
     }
 
