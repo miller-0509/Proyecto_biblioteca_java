@@ -4,6 +4,10 @@
  */
 package Vista;
 
+import java.awt.Image;
+import javax.imageio.ImageIO;
+import java.io.IOException;
+
 /**
  *
  * @author caper
@@ -14,6 +18,19 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     
     public MDIBiblioteca() {
         initComponents();
+        cargarImagenFondo();
+    }
+    
+    private void cargarImagenFondo() {
+        try {
+            Image img = ImageIO.read(getClass().getResource("/imagenes/fondo.jpg"));
+            if (img != null) {
+                escritorio.setImagenFondo(img);
+                escritorio.repaint();
+            }
+        } catch (IOException e) {
+            System.out.println("No se encontro la imagen de fondo: " + e.getMessage());
+        }
     }
 
     /**
@@ -25,7 +42,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        escritorio = new javax.swing.JDesktopPane();
+        escritorio = new FondoEscritorio();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         openMenuItem = new javax.swing.JMenuItem();
@@ -118,7 +135,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JDesktopPane escritorio;
+    private FondoEscritorio escritorio;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
