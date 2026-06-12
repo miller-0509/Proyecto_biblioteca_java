@@ -13,7 +13,6 @@ import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
-import java.awt.event.ActionEvent;
 import java.net.URL;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -24,7 +23,6 @@ import javax.swing.JDesktopPane;
 import javax.swing.JInternalFrame;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -32,7 +30,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.CompoundBorder;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.plaf.basic.BasicButtonUI;
@@ -70,30 +67,25 @@ public class MDIBiblioteca extends javax.swing.JFrame {
                 new EmptyBorder(8, 14, 8, 14)
         ));
 
-        aplicarEstiloMenu(fileMenu);
-        aplicarEstiloMenu(jMenu1);
-        aplicarEstiloMenu(jMenu2);
-        aplicarEstiloMenu(jMenu3);
-        aplicarEstiloMenu(jMenu4);
-        aplicarEstiloMenu(jMenu5);
-
-        aplicarEstiloMenuItem(openMenuItem);
-        aplicarEstiloMenuItem(librosMenuItem);
+        aplicarEstiloMenuItem(fileMenu);
+        aplicarEstiloMenuItem(jMenu1);
+        aplicarEstiloMenuItem(jMenu2);
+        aplicarEstiloMenuItem(jMenu3);
+        aplicarEstiloMenuItem(jMenu4);
+        aplicarEstiloMenuItem(jMenu5);
 
         escritorio.setOpaque(false);
         escritorio.setBorder(BorderFactory.createEmptyBorder());
     }
 
-    private void aplicarEstiloMenu(JMenu menu) {
-        menu.setFont(new Font("SansSerif", Font.BOLD, 13));
-        menu.setForeground(TEXT_DARK);
-        menu.setBorder(new EmptyBorder(7, 12, 7, 12));
-        menu.setOpaque(false);
-    }
-
     private void aplicarEstiloMenuItem(JMenuItem item) {
         item.setFont(new Font("SansSerif", Font.PLAIN, 13));
         item.setForeground(TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.setOpaque(true);
+        item.setBackground(Color.WHITE);
+        item.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        item.addActionListener(evt -> manejarAccionModulo(item.getText()));
     }
 
     private void construirDashboardVisual() {
@@ -136,7 +128,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         barra.setBorder(new EmptyBorder(0, 4, 10, 4));
 
         barra.add(crearBloqueMarca(), BorderLayout.WEST);
-        barra.add(crearNavegacionSuperior(), BorderLayout.CENTER);
         barra.add(crearPerfilUsuario(), BorderLayout.EAST);
         return barra;
     }
@@ -171,40 +162,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         marca.add(insignia);
         marca.add(textos);
         return marca;
-    }
-
-    private JPanel crearNavegacionSuperior() {
-        JPanel navegacion = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 6));
-        navegacion.setOpaque(false);
-
-        navegacion.add(crearBotonNav("Inicio", true, SENA_GREEN_LIGHT, SENA_GREEN_DARK));
-        navegacion.add(crearBotonNav("Equipos", false, Color.WHITE, TEXT_DARK));
-        navegacion.add(crearBotonNav("Libros", false, Color.WHITE, TEXT_DARK));
-        navegacion.add(crearBotonNav("Préstamos", false, Color.WHITE, TEXT_DARK));
-        navegacion.add(crearBotonNav("Reportes", false, Color.WHITE, TEXT_DARK));
-        navegacion.add(crearBotonNav("Sanciones", false, Color.WHITE, TEXT_DARK));
-        navegacion.add(crearBotonNav("Usuarios", false, Color.WHITE, TEXT_DARK));
-        return navegacion;
-    }
-
-    private JButton crearBotonNav(String texto, boolean activo, Color fondo, Color foreground) {
-        JButton boton = new JButton(texto);
-        boton.setFont(new Font("SansSerif", activo ? Font.BOLD : Font.PLAIN, 13));
-        boton.setForeground(foreground);
-        boton.setBackground(fondo);
-        boton.setOpaque(true);
-        boton.setContentAreaFilled(true);
-        boton.setBorder(new CompoundBorder(
-                new MatteBorder(1, 1, 1, 1, activo ? new Color(193, 234, 203) : new Color(229, 233, 239)),
-                new EmptyBorder(7, 12, 7, 12)
-        ));
-        boton.setFocusPainted(false);
-        boton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        boton.setUI(new BasicButtonUI());
-        boton.setRolloverEnabled(true);
-        boton.setMargin(new Insets(0, 0, 0, 0));
-        boton.addActionListener(evt -> manejarAccionModulo(texto));
-        return boton;
     }
 
     private JPanel crearPerfilUsuario() {
@@ -287,9 +244,12 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
         JPanel derecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         derecha.setOpaque(false);
-        JButton chip = crearChipEstado("ADMINISTRADOR", SENA_GREEN, Color.WHITE);
-        chip.setPreferredSize(new Dimension(138, 36));
-        chip.setEnabled(false);
+        JLabel chip = new JLabel("ADMINISTRADOR", SwingConstants.CENTER);
+        chip.setOpaque(true);
+        chip.setBackground(SENA_GREEN);
+        chip.setForeground(Color.WHITE);
+        chip.setFont(new Font("SansSerif", Font.BOLD, 12));
+        chip.setBorder(new EmptyBorder(10, 16, 10, 16));
         derecha.add(chip);
 
         banner.add(textos, BorderLayout.CENTER);
@@ -406,34 +366,25 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         centro.add(descripcionLabel);
         centro.add(Box.createVerticalGlue());
 
-        JPanel pie = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        pie.setOpaque(false);
-        JButton boton = crearChipEstado(accion, colorBoton, textoBoton);
-        boton.addActionListener(evt -> manejarAccionModulo(titulo));
-        pie.add(boton);
-
         tarjeta.add(icono, BorderLayout.NORTH);
         tarjeta.add(centro, BorderLayout.CENTER);
-        tarjeta.add(pie, BorderLayout.SOUTH);
-        return tarjeta;
-    }
+        tarjeta.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                manejarAccionModulo(titulo);
+            }
 
-    private JButton crearChipEstado(String texto, Color fondo, Color foreground) {
-        JButton chip = new JButton(texto);
-        chip.setFont(new Font("SansSerif", Font.BOLD, 12));
-        chip.setForeground(foreground);
-        chip.setBackground(fondo);
-        chip.setOpaque(true);
-        chip.setContentAreaFilled(true);
-        chip.setFocusPainted(false);
-        chip.setBorder(new CompoundBorder(
-                new MatteBorder(1, 1, 1, 1, new Color(fondo.getRed(), fondo.getGreen(), fondo.getBlue(), 80)),
-                new EmptyBorder(8, 14, 8, 14)
-        ));
-        chip.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        chip.setUI(new BasicButtonUI());
-        chip.setHorizontalAlignment(SwingConstants.CENTER);
-        return chip;
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                tarjeta.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                tarjeta.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+            }
+        });
+        return tarjeta;
     }
 
     private void manejarAccionModulo(String modulo) {
@@ -490,8 +441,44 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         equipos.toFront();
     }
 
-    private void openMenuItemActionPerformed(ActionEvent evt) {
-        abrirModuloEquipos();
+    private void abrirModuloLibros() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof Libros) {
+                try {
+                    frame.setIcon(false);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                    // Si el sistema de ventanas lo bloquea, igual lo traemos al frente.
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        Libros libros = new Libros();
+        libros.setVisible(true);
+        libros.setClosable(true);
+        libros.setIconifiable(true);
+        libros.setMaximizable(true);
+        libros.setResizable(true);
+        libros.setSize(1120, 720);
+        libros.setLocation(40, 40);
+        escritorio.add(libros);
+        try {
+            libros.setSelected(true);
+        } catch (PropertyVetoException ex) {
+            // No bloqueamos la apertura por un veto visual.
+        }
+        libros.toFront();
+    }
+
+    private void mostrarModuloEnDesarrollo(String modulo) {
+        JOptionPane.showMessageDialog(
+                this,
+                "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
+                "Módulo en desarrollo",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     public static void main(String args[]) {
@@ -517,22 +504,16 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
         escritorio = new javax.swing.JDesktopPane();
         menuBar = new javax.swing.JMenuBar();
-        fileMenu = new javax.swing.JMenu();
-        openMenuItem = new javax.swing.JMenuItem();
-        jMenu1 = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
-        jMenu3 = new javax.swing.JMenu();
-        jMenu4 = new javax.swing.JMenu();
-        jMenu5 = new javax.swing.JMenu();
+        fileMenu = new javax.swing.JMenuItem();
+        jMenu1 = new javax.swing.JMenuItem();
+        jMenu2 = new javax.swing.JMenuItem();
+        jMenu3 = new javax.swing.JMenuItem();
+        jMenu4 = new javax.swing.JMenuItem();
+        jMenu5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        fileMenu.setMnemonic('f');
         fileMenu.setText("Equipos");
-        openMenuItem.setMnemonic('o');
-        openMenuItem.setText("Abrir");
-        openMenuItem.addActionListener(this::openMenuItemActionPerformed);
-        fileMenu.add(openMenuItem);
         menuBar.add(fileMenu);
 
         jMenu1.setText("Libros");
@@ -563,14 +544,13 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     }
 
     private javax.swing.JDesktopPane escritorio;
-    private javax.swing.JMenu fileMenu;
-    private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
-    private javax.swing.JMenu jMenu3;
-    private javax.swing.JMenu jMenu4;
-    private javax.swing.JMenu jMenu5;
+    private javax.swing.JMenuItem fileMenu;
+    private javax.swing.JMenuItem jMenu1;
+    private javax.swing.JMenuItem jMenu2;
+    private javax.swing.JMenuItem jMenu3;
+    private javax.swing.JMenuItem jMenu4;
+    private javax.swing.JMenuItem jMenu5;
     private javax.swing.JMenuBar menuBar;
-    private javax.swing.JMenuItem openMenuItem;
 
     private static final class FondoPanel extends JPanel {
 

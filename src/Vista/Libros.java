@@ -20,6 +20,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -29,11 +30,13 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -95,7 +98,6 @@ public class Libros extends JInternalFrame {
         setContentPane(raiz);
         pack();
     }
-
     private JPanel crearEncabezado() {
         JPanel encabezado = new JPanel(new BorderLayout(18, 12));
         encabezado.setOpaque(false);
@@ -118,6 +120,7 @@ public class Libros extends JInternalFrame {
 
         JButton btnRegistrar = crearBotonPrincipal("Registrar Libro", new PlusIcon(13, Color.WHITE));
         btnRegistrar.setPreferredSize(new Dimension(172, 42));
+        btnRegistrar.addActionListener(evt -> mostrarMensajeAccion("Registrar Libro"));
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
@@ -137,7 +140,6 @@ public class Libros extends JInternalFrame {
         panel.add(crearTablaLibros(), BorderLayout.CENTER);
         return panel;
     }
-
     private JPanel crearBarraFiltros() {
         JPanel barra = new JPanel(new GridBagLayout());
         barra.setOpaque(false);
@@ -210,6 +212,14 @@ public class Libros extends JInternalFrame {
         return panel;
     }
 
+    private JPanel crearTarjetaTabla() {
+        RoundedPanel panel = new RoundedPanel(new Color(255, 255, 255, 244), new Color(233, 237, 243), 24);
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        panel.add(crearTablaLibros(), BorderLayout.CENTER);
+        return panel;
+    }
+
     private JScrollPane crearTablaLibros() {
         modeloLibros = new DefaultTableModel(
                 new Object[]{"ID", "Título", "Género", "Código Único", "Estado", "Ubicación", "Acciones", "Autor"},
@@ -258,7 +268,7 @@ public class Libros extends JInternalFrame {
         configurarAnchosTabla();
 
         JScrollPane scroll = new JScrollPane(tablaLibros);
-        scroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(Color.WHITE);
         scroll.setBackground(Color.WHITE);
         return scroll;
@@ -394,6 +404,15 @@ public class Libros extends JInternalFrame {
             }
         });
         return boton;
+    }
+
+    private void mostrarMensajeAccion(String accion) {
+        JOptionPane.showMessageDialog(
+                this,
+                accion + " todavía no está conectado al flujo real de datos.",
+                "Módulo de libros",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -597,12 +616,19 @@ public class Libros extends JInternalFrame {
     }
 
     private static JPanel crearPanelAcciones(Color fondo) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 21));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
         panel.setOpaque(true);
         panel.setBackground(fondo);
 
-        JButton ver = crearBotonAccion("Ver", new EyeIcon(15, SENA_GREEN_DARK));
-        JButton mas = crearBotonIcono(new DotsIcon(15, TEXT_SOFT));
+        JButton ver = crearBotonIconoContorno(new EyeIcon(15, SENA_GREEN_DARK), SENA_GREEN, Color.WHITE, new Dimension(58, 42));
+        ver.addActionListener(evt -> JOptionPane.showMessageDialog(
+                null,
+                "Vista previa del libro todavía no está conectada a datos reales.",
+                "Acción de libro",
+                JOptionPane.INFORMATION_MESSAGE
+        ));
+
+        JButton mas = crearBotonIconoContorno(new DotsIcon(15, TEXT_SOFT), BORDER, Color.WHITE, new Dimension(42, 42));
         JPopupMenu menu = crearMenuAcciones();
         mas.addActionListener(evt -> menu.show(mas, 0, mas.getHeight()));
 
@@ -625,6 +651,12 @@ public class Libros extends JInternalFrame {
         item.setFont(new Font("SansSerif", Font.PLAIN, 13));
         item.setForeground("Eliminar".equals(texto) ? new Color(185, 28, 28) : TEXT_DARK);
         item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.addActionListener(evt -> JOptionPane.showMessageDialog(
+                null,
+                texto + " del libro todavía no está conectado a datos reales.",
+                "Acción de libro",
+                JOptionPane.INFORMATION_MESSAGE
+        ));
         return item;
     }
 
@@ -648,6 +680,22 @@ public class Libros extends JInternalFrame {
         boton.setPreferredSize(new Dimension(36, 36));
         boton.setBackground(Color.WHITE);
         boton.setBorder(BorderFactory.createLineBorder(BORDER));
+        boton.setFocusPainted(false);
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        boton.setUI(new BasicButtonUI());
+        return boton;
+    }
+
+    private static JButton crearBotonIconoContorno(Icon icono, Color borde, Color fondo, Dimension dimension) {
+        JButton boton = new JButton(icono);
+        boton.setPreferredSize(dimension);
+        boton.setBackground(fondo);
+        boton.setOpaque(true);
+        boton.setContentAreaFilled(true);
+        boton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(borde),
+                new EmptyBorder(8, 8, 8, 8)
+        ));
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.setUI(new BasicButtonUI());
@@ -743,15 +791,18 @@ public class Libros extends JInternalFrame {
                 int w = getWidth();
                 int h = getHeight();
 
-                g2.setComposite(AlphaComposite.SrcOver.derive(0.08f));
+                g2.setComposite(AlphaComposite.SrcOver.derive(0.10f));
                 g2.setColor(Color.BLACK);
                 g2.fillRoundRect(4, 6, Math.max(0, w - 8), Math.max(0, h - 8), arc, arc);
 
                 g2.setComposite(AlphaComposite.SrcOver);
                 g2.setColor(fill);
                 g2.fillRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
-                g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+
+                if (borderColor != null) {
+                    g2.setColor(borderColor);
+                    g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+                }
             } finally {
                 g2.dispose();
             }
@@ -761,17 +812,97 @@ public class Libros extends JInternalFrame {
 
     private static final class FondoInternoPanel extends JPanel {
 
+        private final ImageIcon fondo;
+
+        private FondoInternoPanel() {
+            URL url = Libros.class.getResource("/imagenes/fondo.jpg");
+            fondo = url != null ? new ImageIcon(url) : null;
+            setOpaque(true);
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
+
+                if (fondo != null && fondo.getImage() != null) {
+                    int w = getWidth();
+                    int h = getHeight();
+                    int iw = fondo.getIconWidth();
+                    int ih = fondo.getIconHeight();
+
+                    double scale = Math.max((double) w / iw, (double) h / ih);
+                    int drawW = (int) Math.round(iw * scale);
+                    int drawH = (int) Math.round(ih * scale);
+                    int x = (w - drawW) / 2;
+                    int y = (h - drawH) / 2;
+                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
+                } else {
+                    g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                }
+
+                g2.setComposite(AlphaComposite.SrcOver.derive(0.72f));
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 235), 0, getHeight(), new Color(248, 248, 248, 224)));
                 g2.fillRect(0, 0, getWidth(), getHeight());
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
+        }
+    }
+
+    private static final class BookIcon implements Icon {
+
+        private final int size;
+        private final Color color;
+
+        private BookIcon(int size, Color color) {
+            this.size = size;
+            this.color = color;
+        }
+
+        @Override
+        public int getIconWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return size;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.setStroke(new java.awt.BasicStroke(1.8f));
+
+                int w = size;
+                int h = size;
+                int left = x + 2;
+                int top = y + 2;
+                int right = x + w - 2;
+                int bottom = y + h - 3;
+                int mid = x + w / 2;
+
+                g2.drawRoundRect(left, top, w - 4, h - 5, 4, 4);
+                g2.drawLine(mid, top + 1, mid, bottom - 1);
+                g2.drawLine(left + 3, top + 5, mid - 1, top + 4);
+                g2.drawLine(mid + 1, top + 4, right - 3, top + 5);
+                g2.drawLine(left + 3, bottom - 4, mid - 1, bottom - 3);
+                g2.drawLine(mid + 1, bottom - 3, right - 3, bottom - 4);
+            } finally {
+                g2.dispose();
+            }
         }
     }
 
@@ -913,3 +1044,4 @@ public class Libros extends JInternalFrame {
         }
     }
 }
+

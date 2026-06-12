@@ -20,6 +20,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -29,6 +30,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -636,17 +638,48 @@ public class Equipos extends JInternalFrame {
 
     private static final class FondoInternoPanel extends JPanel {
 
+        private final ImageIcon fondo;
+
+        private FondoInternoPanel() {
+            URL url = Equipos.class.getResource("/imagenes/fondo.jpg");
+            fondo = url != null ? new ImageIcon(url) : null;
+            setOpaque(true);
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
+                if (fondo != null && fondo.getImage() != null) {
+                    int w = getWidth();
+                    int h = getHeight();
+                    int iw = fondo.getIconWidth();
+                    int ih = fondo.getIconHeight();
+
+                    double scale = Math.max((double) w / iw, (double) h / ih);
+                    int drawW = (int) Math.round(iw * scale);
+                    int drawH = (int) Math.round(ih * scale);
+                    int x = (w - drawW) / 2;
+                    int y = (h - drawH) / 2;
+                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
+                } else {
+                    g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                }
+
+                g2.setComposite(AlphaComposite.SrcOver.derive(0.72f));
+                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 235), 0, getHeight(), new Color(248, 248, 248, 224)));
                 g2.fillRect(0, 0, getWidth(), getHeight());
             } finally {
                 g2.dispose();
             }
-            super.paintComponent(g);
         }
     }
 
