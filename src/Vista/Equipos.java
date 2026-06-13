@@ -35,7 +35,7 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import Modelo.Equipo;
-import Modelo.EquipoDAO;
+import Controlador.EquipoControlador;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -81,12 +81,12 @@ public class Equipos extends JInternalFrame {
     private JTable tablaEquipos;
     private DefaultTableModel modeloEquipos;
     private TableRowSorter<DefaultTableModel> filtroTabla;
-    private EquipoDAO equipoDAO;
+    private EquipoControlador equipoControlador;
 
     public Equipos() {
         initComponents();
         construirVista();
-        equipoDAO = new EquipoDAO();
+        equipoControlador = new EquipoControlador();
         cargarEquipos();
         aplicarFiltros();
     }
@@ -322,7 +322,7 @@ public class Equipos extends JInternalFrame {
     private void cargarEquipos() {
         modeloEquipos.setRowCount(0);
         try {
-            java.util.List<Equipo> lista = equipoDAO.listarTodos();
+            java.util.List<Equipo> lista = equipoControlador.listarTodos();
             if (lista == null) {
                 JOptionPane.showMessageDialog(this,
                         "Error: la consulta devolvió null.\nVerifique la conexión a la base de datos.",
@@ -438,7 +438,7 @@ public class Equipos extends JInternalFrame {
             Object idObj = modeloEquipos.getValueAt(modelRow, 0);
             if (idObj == null) return;
             int id = Integer.parseInt(idObj.toString());
-            Equipo e = equipoDAO.buscarPorId(id);
+            Equipo e = equipoControlador.buscarPorId(id);
             if (e != null) mostrarDialogoEquipo(e, false);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -453,7 +453,7 @@ public class Equipos extends JInternalFrame {
             Object idObj = modeloEquipos.getValueAt(modelRow, 0);
             if (idObj == null) return;
             int id = Integer.parseInt(idObj.toString());
-            Equipo e = equipoDAO.buscarPorId(id);
+            Equipo e = equipoControlador.buscarPorId(id);
             if (e != null) mostrarDialogoEquipo(e, true);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -478,7 +478,7 @@ public class Equipos extends JInternalFrame {
                     JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                if (equipoDAO.eliminarLogico(id)) {
+                if (equipoControlador.eliminar(id)) {
                     refrescarTabla();
                 } else {
                     JOptionPane.showMessageDialog(this,
@@ -595,13 +595,8 @@ public class Equipos extends JInternalFrame {
                     equipo.setTiempoMaxPrestamo((Integer) spnTiempo.getValue());
                     equipo.setDescripcion(txtDescripcion.getText().trim());
 
-                    boolean exito;
-                    if (equipo.getIdEquipo() > 0) {
-                        exito = equipoDAO.actualizar(equipo);
-                    } else {
-                        int id = equipoDAO.insertar(equipo);
-                        exito = id > 0;
-                    }
+                    int id = equipoControlador.guardar(equipo);
+                    boolean exito = id > 0;
 
                     if (exito) {
                         refrescarTabla();

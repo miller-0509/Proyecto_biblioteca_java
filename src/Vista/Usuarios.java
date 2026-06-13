@@ -62,7 +62,7 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import Modelo.Usuario;
-import Modelo.UsuarioDAO;
+import Controlador.UsuarioControlador;
 
 public class Usuarios extends JInternalFrame {
 
@@ -86,12 +86,12 @@ public class Usuarios extends JInternalFrame {
     private JTable tablaUsuarios;
     private DefaultTableModel modeloUsuarios;
     private TableRowSorter<DefaultTableModel> filtroTabla;
-    private UsuarioDAO usuarioDAO;
+    private UsuarioControlador usuarioControlador;
 
     public Usuarios() {
         initComponents();
         construirVista();
-        usuarioDAO = new UsuarioDAO();
+        usuarioControlador = new UsuarioControlador();
         cargarUsuarios();
         aplicarFiltros();
     }
@@ -326,7 +326,7 @@ public class Usuarios extends JInternalFrame {
     private void cargarUsuarios() {
         modeloUsuarios.setRowCount(0);
         try {
-            java.util.List<Usuario> lista = usuarioDAO.listarTodos();
+            java.util.List<Usuario> lista = usuarioControlador.listarTodos();
             if (lista == null) return;
             for (Usuario u : lista) {
                 modeloUsuarios.addRow(new Object[]{
@@ -466,7 +466,7 @@ public class Usuarios extends JInternalFrame {
         try {
             int id = getIdFromModelRow(modelRow);
             if (id < 0) return;
-            Usuario u = usuarioDAO.buscarPorId(id);
+            Usuario u = usuarioControlador.buscarPorId(id);
             if (u != null) mostrarDialogoUsuario(u, false);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -480,7 +480,7 @@ public class Usuarios extends JInternalFrame {
         try {
             int id = getIdFromModelRow(modelRow);
             if (id < 0) return;
-            Usuario u = usuarioDAO.buscarPorId(id);
+            Usuario u = usuarioControlador.buscarPorId(id);
             if (u != null) mostrarDialogoUsuario(u, true);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -504,7 +504,7 @@ public class Usuarios extends JInternalFrame {
                     JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                if (usuarioDAO.eliminar(id)) {
+                if (usuarioControlador.eliminar(id)) {
                     refrescarTabla();
                 } else {
                     JOptionPane.showMessageDialog(this,
@@ -602,19 +602,14 @@ public class Usuarios extends JInternalFrame {
                         usuario.setPassword(pass);
                     }
 
-                    boolean exito;
-                    if (usuario.getIdUsuario() > 0) {
-                        exito = usuarioDAO.actualizar(usuario);
-                    } else {
-                        if (pass.isEmpty()) {
-                            JOptionPane.showMessageDialog(dialog,
-                                    "La contraseña es obligatoria para nuevos usuarios.",
-                                    "Error", JOptionPane.ERROR_MESSAGE);
-                            return;
-                        }
-                        int id = usuarioDAO.insertar(usuario);
-                        exito = id > 0;
+                    if (usuario.getIdUsuario() <= 0 && pass.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "La contraseña es obligatoria para nuevos usuarios.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
+                    int id = usuarioControlador.guardar(usuario);
+                    boolean exito = id > 0;
 
                     if (exito) {
                         refrescarTabla();

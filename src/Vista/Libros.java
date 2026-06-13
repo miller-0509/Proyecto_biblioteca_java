@@ -61,7 +61,7 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import Modelo.Libro;
-import Modelo.LibroDAO;
+import Controlador.LibroControlador;
 
 public class Libros extends JInternalFrame {
 
@@ -81,12 +81,12 @@ public class Libros extends JInternalFrame {
     private JTable tablaLibros;
     private DefaultTableModel modeloLibros;
     private TableRowSorter<DefaultTableModel> filtroTabla;
-    private LibroDAO libroDAO;
+    private LibroControlador libroControlador;
 
     public Libros() {
         initComponents();
         construirVista();
-        libroDAO = new LibroDAO();
+        libroControlador = new LibroControlador();
         cargarLibros();
         aplicarFiltros();
     }
@@ -335,7 +335,7 @@ public class Libros extends JInternalFrame {
     private void cargarLibros() {
         modeloLibros.setRowCount(0);
         try {
-            java.util.List<Libro> lista = libroDAO.listarTodos();
+            java.util.List<Libro> lista = libroControlador.listarTodos();
             if (lista == null) return;
             for (Libro l : lista) {
                 modeloLibros.addRow(new Object[]{
@@ -444,7 +444,7 @@ public class Libros extends JInternalFrame {
             Object idObj = modeloLibros.getValueAt(modelRow, 0);
             if (idObj == null) return;
             int id = Integer.parseInt(idObj.toString());
-            Libro l = libroDAO.buscarPorId(id);
+            Libro l = libroControlador.buscarPorId(id);
             if (l != null) mostrarDialogoLibro(l, false);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -459,7 +459,7 @@ public class Libros extends JInternalFrame {
             Object idObj = modeloLibros.getValueAt(modelRow, 0);
             if (idObj == null) return;
             int id = Integer.parseInt(idObj.toString());
-            Libro l = libroDAO.buscarPorId(id);
+            Libro l = libroControlador.buscarPorId(id);
             if (l != null) mostrarDialogoLibro(l, true);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -484,7 +484,7 @@ public class Libros extends JInternalFrame {
                     JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                if (libroDAO.eliminarLogico(id)) {
+                if (libroControlador.eliminar(id)) {
                     refrescarTabla();
                 } else {
                     JOptionPane.showMessageDialog(this,
@@ -601,13 +601,8 @@ public class Libros extends JInternalFrame {
                     libro.setTiempoMaxPrestamo((Integer) spnTiempo.getValue());
                     libro.setDescripcion(txtDescripcion.getText().trim());
 
-                    boolean exito;
-                    if (libro.getIdLibro() > 0) {
-                        exito = libroDAO.actualizar(libro);
-                    } else {
-                        int id = libroDAO.insertar(libro);
-                        exito = id > 0;
-                    }
+                    int id = libroControlador.guardar(libro);
+                    boolean exito = id > 0;
 
                     if (exito) {
                         refrescarTabla();
