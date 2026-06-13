@@ -402,6 +402,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
+        if ("Usuarios".equals(modulo)) {
+            abrirModuloUsuarios();
+            return;
+        }
+
         JOptionPane.showMessageDialog(
                 this,
                 "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
@@ -470,6 +475,37 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             // No bloqueamos la apertura por un veto visual.
         }
         libros.toFront();
+    }
+
+    private void abrirModuloUsuarios() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof Usuarios) {
+                try {
+                    frame.setIcon(false);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                    // Si el sistema de ventanas lo bloquea, igual lo traemos al frente.
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        Usuarios usuarios = new Usuarios();
+        usuarios.setVisible(true);
+        usuarios.setClosable(true);
+        usuarios.setIconifiable(true);
+        usuarios.setMaximizable(true);
+        usuarios.setResizable(true);
+        usuarios.setSize(1120, 720);
+        usuarios.setLocation(45, 45);
+        escritorio.add(usuarios);
+        try {
+            usuarios.setSelected(true);
+        } catch (PropertyVetoException ex) {
+            // No bloqueamos la apertura por un veto visual.
+        }
+        usuarios.toFront();
     }
 
     private void mostrarModuloEnDesarrollo(String modulo) {
