@@ -54,6 +54,15 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JPasswordField;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import Modelo.Usuario;
+import Modelo.UsuarioDAO;
 
 public class Usuarios extends JInternalFrame {
 
@@ -77,11 +86,13 @@ public class Usuarios extends JInternalFrame {
     private JTable tablaUsuarios;
     private DefaultTableModel modeloUsuarios;
     private TableRowSorter<DefaultTableModel> filtroTabla;
+    private UsuarioDAO usuarioDAO;
 
     public Usuarios() {
         initComponents();
         construirVista();
-        cargarDatosDemo();
+        usuarioDAO = new UsuarioDAO();
+        cargarUsuarios();
         aplicarFiltros();
     }
 
@@ -125,7 +136,18 @@ public class Usuarios extends JInternalFrame {
 
         JButton btnNuevo = crearBotonPrincipal("Nuevo Usuario", new UserPlusIcon(13, Color.WHITE));
         btnNuevo.setPreferredSize(new Dimension(176, 42));
-        btnNuevo.addActionListener(evt -> mostrarMensajeAccion("Nuevo Usuario"));
+        btnNuevo.addActionListener(evt -> {
+            try {
+                Usuario nuevo = new Usuario();
+                nuevo.setEstado("activo");
+                mostrarDialogoUsuario(nuevo, true);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
@@ -216,7 +238,7 @@ public class Usuarios extends JInternalFrame {
 
     private JScrollPane crearTablaUsuarios() {
         modeloUsuarios = new DefaultTableModel(
-                new Object[]{"Avatar", "Nombre Completo", "Correo", "Rol", "Estado", "Acciones"},
+                new Object[]{"Avatar", "Nombre Completo", "Correo", "Rol", "Estado", "Acciones", "ID"},
                 0
         ) {
             @Override
@@ -257,6 +279,7 @@ public class Usuarios extends JInternalFrame {
         tablaUsuarios.getColumnModel().getColumn(4).setCellRenderer(new EstadoRenderer());
         tablaUsuarios.getColumnModel().getColumn(5).setCellRenderer(new AccionesRenderer());
         tablaUsuarios.getColumnModel().getColumn(5).setCellEditor(new AccionesEditor());
+        tablaUsuarios.removeColumn(tablaUsuarios.getColumnModel().getColumn(6));
         configurarAnchosTabla();
 
         JScrollPane scroll = new JScrollPane(tablaUsuarios);
@@ -300,15 +323,32 @@ public class Usuarios extends JInternalFrame {
         });
     }
 
-    private void cargarDatosDemo() {
-        modeloUsuarios.addRow(new Object[]{"SA", "Super Administrador", "admin_sena@biblioteca.com", "Administrador", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"BP", "Bibliotecario Principal", "biblioteca@gmail.com", "Bibliotecario", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"AP", "Almacenista Principal", "almacen@gmail.com", "Almacenista", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"MC", "Miller Caper", "capermiller5@gmail.com", "Aprendiz", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"SC", "Sara Caper", "pscaper@gmail.com", "Aprendiz", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"JR", "Jose Rosales", "juegosmiller58@gmail.com", "Aprendiz", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"BS", "Brayan Sanabria", "bduartesanabria@gmail.com", "Aprendiz", "Activo", ""});
-        modeloUsuarios.addRow(new Object[]{"BD", "Brandon Duarte", "brandonjoseduarte823@gmail.com", "Aprendiz", "Activo", ""});
+    private void cargarUsuarios() {
+        modeloUsuarios.setRowCount(0);
+        try {
+            java.util.List<Usuario> lista = usuarioDAO.listarTodos();
+            if (lista == null) return;
+            for (Usuario u : lista) {
+                modeloUsuarios.addRow(new Object[]{
+                    u.getIniciales(),
+                    u.getNombreCompleto(),
+                    u.getCorreo(),
+                    rolToDisplay(u.getRol()),
+                    estadoToDisplay(u.getEstado()),
+                    "",
+                    u.getIdUsuario()
+                });
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar usuarios: " + ex.getMessage(),
+                    "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void refrescarTabla() {
+        cargarUsuarios();
     }
 
     private void aplicarFiltros() {
@@ -340,6 +380,289 @@ public class Usuarios extends JInternalFrame {
         }
 
         filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
+    }
+
+    private String estadoToDisplay(String estado) {
+        if (estado == null) return "Activo";
+        switch (estado) {
+            case "activo": return "Activo";
+            case "inactivo": return "Inactivo";
+            case "bloqueado": return "Bloqueado";
+            default: return estado;
+        }
+    }
+
+    private String displayToEstado(String display) {
+        if (display == null) return "activo";
+        switch (display) {
+            case "Activo": return "activo";
+            case "Inactivo": return "inactivo";
+            case "Bloqueado": return "bloqueado";
+            default: return "activo";
+        }
+    }
+
+    private String rolToDisplay(String rol) {
+        if (rol == null) return "Aprendiz";
+        switch (rol) {
+            case "administrador": return "Administrador";
+            case "bibliotecario": return "Bibliotecario";
+            case "almacenista": return "Almacenista";
+            case "aprendiz": return "Aprendiz";
+            case "instructor": return "Instructor";
+            default: return rol;
+        }
+    }
+
+    private String displayToRol(String display) {
+        if (display == null) return "aprendiz";
+        switch (display) {
+            case "Administrador": return "administrador";
+            case "Bibliotecario": return "bibliotecario";
+            case "Almacenista": return "almacenista";
+            case "Aprendiz": return "aprendiz";
+            case "Instructor": return "instructor";
+            default: return "aprendiz";
+        }
+    }
+
+    private void mostrarPopup(Component invoker, int row) {
+        int modelRow = tablaUsuarios.convertRowIndexToModel(row);
+        if (modelRow < 0) return;
+        JPopupMenu popup = new JPopupMenu();
+        popup.setBorder(BorderFactory.createLineBorder(BORDER));
+        popup.add(crearItemMenuAccion("Ver", modelRow));
+        popup.add(crearItemMenuAccion("Editar", modelRow));
+        popup.add(crearItemMenuAccion("Eliminar", modelRow));
+        popup.show(invoker, 0, invoker.getHeight());
+    }
+
+    private JMenuItem crearItemMenuAccion(String texto, int modelRow) {
+        JMenuItem item = new JMenuItem(texto);
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground("Eliminar".equals(texto) ? RED : TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.addActionListener(evt -> {
+            if ("Ver".equals(texto)) mostrarDialogoVer(modelRow);
+            else if ("Editar".equals(texto)) mostrarDialogoEditar(modelRow);
+            else if ("Eliminar".equals(texto)) eliminarUsuario(modelRow);
+        });
+        return item;
+    }
+
+    private int getIdFromModelRow(int modelRow) {
+        // ID is stored in column 6 (hidden), but the column is removed from view.
+        // We store it as a client property keyed by row, or read from model directly
+        // Since the column is removed from the table view but still in the model:
+        try {
+            Object val = modeloUsuarios.getValueAt(modelRow, 6);
+            return Integer.parseInt(val.toString());
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    private void mostrarDialogoVer(int modelRow) {
+        try {
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            Usuario u = usuarioDAO.buscarPorId(id);
+            if (u != null) mostrarDialogoUsuario(u, false);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar detalles del usuario: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoEditar(int modelRow) {
+        try {
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            Usuario u = usuarioDAO.buscarPorId(id);
+            if (u != null) mostrarDialogoUsuario(u, true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar datos del usuario: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void eliminarUsuario(int modelRow) {
+        try {
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            String nombre = String.valueOf(modeloUsuarios.getValueAt(modelRow, 1));
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "¿Está seguro de eliminar el usuario \"" + nombre + "\"?",
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (usuarioDAO.eliminar(id)) {
+                    refrescarTabla();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "Error al eliminar el usuario.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al eliminar: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoUsuario(Usuario usuario, boolean editable) {
+        java.awt.Window padre = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(padre, editable ? "Registrar / Editar Usuario" : "Detalles del Usuario",
+                java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setBorder(new EmptyBorder(20, 24, 20, 24));
+        content.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(6, 0, 6, 0);
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+
+        Font labelFont = new Font("SansSerif", Font.BOLD, 12);
+        Color labelColor = TEXT_SOFT;
+
+        JTextField txtNombres = new JTextField(usuario.getNombres());
+        txtNombres.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtApellidos = new JTextField(usuario.getApellidos());
+        txtApellidos.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtCorreo = new JTextField(usuario.getCorreo());
+        txtCorreo.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbRolUsuario = new JComboBox<>(new String[]{"Administrador", "Bibliotecario", "Almacenista", "Aprendiz", "Instructor"});
+        cmbRolUsuario.setSelectedItem(rolToDisplay(usuario.getRol()));
+        cmbRolUsuario.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbEstadoUsuario = new JComboBox<>(new String[]{"Activo", "Inactivo", "Bloqueado"});
+        cmbEstadoUsuario.setSelectedItem(estadoToDisplay(usuario.getEstado()));
+        cmbEstadoUsuario.setPreferredSize(new Dimension(380, 36));
+
+        JPasswordField txtPassword = new JPasswordField();
+        txtPassword.setPreferredSize(new Dimension(380, 36));
+
+        java.awt.Component[][] campos = {
+            {crearLabel("Nombres", labelFont, labelColor), txtNombres},
+            {crearLabel("Apellidos", labelFont, labelColor), txtApellidos},
+            {crearLabel("Correo", labelFont, labelColor), txtCorreo},
+            {crearLabel("Rol", labelFont, labelColor), cmbRolUsuario},
+            {crearLabel("Estado", labelFont, labelColor), cmbEstadoUsuario},
+            {crearLabel(usuario.getIdUsuario() > 0 ? "Contraseña (dejar vacío para no cambiar)" : "Contraseña", labelFont, labelColor), txtPassword}
+        };
+
+        gbc.gridy = 0;
+        for (java.awt.Component[] fila : campos) {
+            gbc.gridx = 0;
+            content.add(fila[0], gbc);
+            gbc.gridy++;
+            content.add(fila[1], gbc);
+            gbc.gridy++;
+        }
+
+        if (!editable) {
+            txtNombres.setEditable(false);
+            txtApellidos.setEditable(false);
+            txtCorreo.setEditable(false);
+            cmbRolUsuario.setEnabled(false);
+            cmbEstadoUsuario.setEnabled(false);
+            txtPassword.setVisible(false);
+        }
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        botones.setOpaque(false);
+
+        if (editable) {
+            JButton btnGuardar = crearBotonPrincipal(usuario.getIdUsuario() > 0 ? "Actualizar" : "Guardar", null);
+            btnGuardar.addActionListener(evt -> {
+                try {
+                    usuario.setNombres(txtNombres.getText().trim());
+                    usuario.setApellidos(txtApellidos.getText().trim());
+                    usuario.setCorreo(txtCorreo.getText().trim());
+                    usuario.setRol(displayToRol(String.valueOf(cmbRolUsuario.getSelectedItem())));
+                    usuario.setEstado(displayToEstado(String.valueOf(cmbEstadoUsuario.getSelectedItem())));
+                    String pass = new String(txtPassword.getPassword());
+                    if (!pass.isEmpty()) {
+                        usuario.setPassword(pass);
+                    }
+
+                    boolean exito;
+                    if (usuario.getIdUsuario() > 0) {
+                        exito = usuarioDAO.actualizar(usuario);
+                    } else {
+                        if (pass.isEmpty()) {
+                            JOptionPane.showMessageDialog(dialog,
+                                    "La contraseña es obligatoria para nuevos usuarios.",
+                                    "Error", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                        int id = usuarioDAO.insertar(usuario);
+                        exito = id > 0;
+                    }
+
+                    if (exito) {
+                        refrescarTabla();
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Error al guardar el usuario.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                            "Error al guardar: " + ex.getMessage(),
+                            "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            botones.add(btnGuardar);
+        }
+
+        JButton btnCerrar = new JButton(editable ? "Cancelar" : "Cerrar");
+        btnCerrar.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        btnCerrar.setForeground(TEXT_SOFT);
+        btnCerrar.setBackground(Color.WHITE);
+        btnCerrar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(10, 18, 10, 18)));
+        btnCerrar.setFocusPainted(false);
+        btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrar.addActionListener(evt -> dialog.dispose());
+        botones.add(btnCerrar);
+
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        content.add(botones, gbc);
+
+        dialog.add(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(padre);
+        dialog.setResizable(false);
+        dialog.setVisible(true);
+    }
+
+    private JLabel crearLabel(String texto, Font font, Color color) {
+        JLabel label = new JLabel(texto);
+        label.setFont(font);
+        label.setForeground(color);
+        return label;
     }
 
     private JComboBox<String> crearCombo(String[] opciones) {
@@ -567,9 +890,9 @@ public class Usuarios extends JInternalFrame {
         }
     }
 
-    private static final class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
+    private class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final JPanel panel = crearPanelAcciones(Color.WHITE);
+        private int editingRow;
 
         @Override
         public Object getCellEditorValue() {
@@ -583,7 +906,25 @@ public class Usuarios extends JInternalFrame {
                 boolean isSelected,
                 int row,
                 int column) {
+            editingRow = row;
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
+            panel.setOpaque(true);
             panel.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
+
+            JButton editar = crearBotonIconoContorno(new EditIcon(15, SENA_GREEN_DARK), SENA_GREEN, Color.WHITE, new Dimension(58, 42));
+            editar.addActionListener(evt -> {
+                mostrarDialogoEditar(editingRow);
+                fireEditingStopped();
+            });
+
+            JButton mas = crearBotonIconoContorno(new DotsIcon(15, TEXT_SOFT), BORDER, Color.WHITE, new Dimension(42, 42));
+            mas.addActionListener(evt -> {
+                mostrarPopup(mas, editingRow);
+                fireEditingStopped();
+            });
+
+            panel.add(editar);
+            panel.add(mas);
             return panel;
         }
     }

@@ -25,6 +25,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.swing.AbstractCellEditor;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import Modelo.Equipo;
+import Modelo.EquipoDAO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -70,11 +81,13 @@ public class Equipos extends JInternalFrame {
     private JTable tablaEquipos;
     private DefaultTableModel modeloEquipos;
     private TableRowSorter<DefaultTableModel> filtroTabla;
+    private EquipoDAO equipoDAO;
 
     public Equipos() {
         initComponents();
         construirVista();
-        cargarDatosDemo();
+        equipoDAO = new EquipoDAO();
+        cargarEquipos();
         aplicarFiltros();
     }
 
@@ -118,6 +131,20 @@ public class Equipos extends JInternalFrame {
 
         JButton btnRegistrar = crearBotonPrincipal("Registrar Equipo", new PlusIcon(13, Color.WHITE));
         btnRegistrar.setPreferredSize(new Dimension(178, 42));
+        btnRegistrar.addActionListener(evt -> {
+            try {
+                Equipo nuevo = new Equipo();
+                nuevo.setEstado("disponible");
+                nuevo.setDisponiblePrestamo(true);
+                nuevo.setTiempoMaxPrestamo(7);
+                mostrarDialogoEquipo(nuevo, true);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
@@ -292,13 +319,38 @@ public class Equipos extends JInternalFrame {
         });
     }
 
-    private void cargarDatosDemo() {
-        modeloEquipos.addRow(new Object[]{"001", "Video Beam Epson X49", "Proyector", "EP-X49-2026", "Disponible", "Biblioteca", "", "Epson"});
-        modeloEquipos.addRow(new Object[]{"002", "Tablet Samsung A9", "Tablet", "TB-A9-1842", "En préstamo", "Sala TIC", "", "Samsung"});
-        modeloEquipos.addRow(new Object[]{"003", "Monitor Lenovo 24", "Monitor", "MN-LNV-2441", "Disponible", "Almacén", "", "Lenovo"});
-        modeloEquipos.addRow(new Object[]{"004", "Teclado Logitech K120", "Teclado", "TK-LG-7720", "En mantenimiento", "Soporte", "", "Logitech"});
-        modeloEquipos.addRow(new Object[]{"005", "Tablet Lenovo M10", "Tablet", "TB-M10-3288", "No disponible", "Coordinación", "", "Lenovo"});
-        modeloEquipos.addRow(new Object[]{"006", "Proyector BenQ MX560", "Proyector", "BQ-MX-5602", "Disponible", "Auditorio", "", "BenQ"});
+    private void cargarEquipos() {
+        modeloEquipos.setRowCount(0);
+        try {
+            java.util.List<Equipo> lista = equipoDAO.listarTodos();
+            if (lista == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Error: la consulta devolvió null.\nVerifique la conexión a la base de datos.",
+                        "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            for (Equipo e : lista) {
+                modeloEquipos.addRow(new Object[]{
+                    String.format("%03d", e.getIdEquipo()),
+                    e.getNombre(),
+                    e.getTipoEquipo(),
+                    e.getNumeroSerie(),
+                    estadoToDisplay(e.getEstado()),
+                    e.getUbicacion(),
+                    "",
+                    e.getMarca()
+                });
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar equipos: " + ex.getMessage(),
+                    "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void refrescarTabla() {
+        cargarEquipos();
     }
 
     private void aplicarFiltros() {
@@ -340,6 +392,264 @@ public class Equipos extends JInternalFrame {
         } else {
             filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
         }
+    }
+
+    private String estadoToDisplay(String estado) {
+        if (estado == null) return "Disponible";
+        switch (estado) {
+            case "disponible": return "Disponible";
+            case "prestado": return "En préstamo";
+            case "mantenimiento": return "En mantenimiento";
+            case "dañado": return "Dañado";
+            default: return estado;
+        }
+    }
+
+    private String displayToEstado(String display) {
+        if (display == null) return "disponible";
+        switch (display) {
+            case "Disponible": return "disponible";
+            case "En préstamo": return "prestado";
+            case "En mantenimiento": return "mantenimiento";
+            case "Dañado": return "dañado";
+            default: return "disponible";
+        }
+    }
+
+    private void mostrarPopup(Component invoker, int row) {
+        int modelRow = tablaEquipos.convertRowIndexToModel(row);
+        if (modelRow < 0) return;
+        JPopupMenu popup = new JPopupMenu();
+        JMenuItem editar = new JMenuItem("Editar");
+        editar.addActionListener(evt -> {
+            mostrarDialogoEditar(modelRow);
+        });
+        JMenuItem eliminar = new JMenuItem("Eliminar");
+        eliminar.addActionListener(evt -> {
+            eliminarEquipo(modelRow);
+        });
+        popup.add(editar);
+        popup.add(eliminar);
+        popup.show(invoker, 0, invoker.getHeight());
+    }
+
+    private void mostrarDialogoVer(int modelRow) {
+        try {
+            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            Equipo e = equipoDAO.buscarPorId(id);
+            if (e != null) mostrarDialogoEquipo(e, false);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar detalles del equipo: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoEditar(int modelRow) {
+        try {
+            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            Equipo e = equipoDAO.buscarPorId(id);
+            if (e != null) mostrarDialogoEquipo(e, true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar datos del equipo: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void eliminarEquipo(int modelRow) {
+        try {
+            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            String nombre = String.valueOf(modeloEquipos.getValueAt(modelRow, 1));
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "¿Está seguro de eliminar el equipo \"" + nombre + "\"?",
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (equipoDAO.eliminarLogico(id)) {
+                    refrescarTabla();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "Error al eliminar el equipo.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al eliminar: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoEquipo(Equipo equipo, boolean editable) {
+        java.awt.Window padre = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(padre, editable ? "Registrar / Editar Equipo" : "Detalles del Equipo",
+                java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setBorder(new EmptyBorder(20, 24, 20, 24));
+        content.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(6, 0, 6, 0);
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+
+        Font labelFont = new Font("SansSerif", Font.BOLD, 12);
+        Color labelColor = TEXT_SOFT;
+
+        JTextField txtNombre = new JTextField(equipo.getNombre());
+        txtNombre.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbTipoEquipo = new JComboBox<>(new String[]{"Monitor", "Proyector", "Teclado", "Tablet", "Otros"});
+        if (equipo.getTipoEquipo() != null) cmbTipoEquipo.setSelectedItem(equipo.getTipoEquipo());
+        cmbTipoEquipo.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtMarca = new JTextField(equipo.getMarca());
+        txtMarca.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtSerie = new JTextField(equipo.getNumeroSerie());
+        txtSerie.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbEstadoEquipo = new JComboBox<>(new String[]{"Disponible", "En préstamo", "En mantenimiento", "Dañado"});
+        cmbEstadoEquipo.setSelectedItem(estadoToDisplay(equipo.getEstado()));
+        cmbEstadoEquipo.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtUbicacion = new JTextField(equipo.getUbicacion());
+        txtUbicacion.setPreferredSize(new Dimension(380, 36));
+
+        JCheckBox chkPrestamo = new JCheckBox("Disponible para préstamo", equipo.isDisponiblePrestamo());
+        chkPrestamo.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
+        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(equipo.getTiempoMaxPrestamo(), 0, 365, 1);
+        JSpinner spnTiempo = new JSpinner(spinnerModel);
+        spnTiempo.setPreferredSize(new Dimension(120, 36));
+
+        JTextArea txtDescripcion = new JTextArea(equipo.getDescripcion(), 3, 30);
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setWrapStyleWord(true);
+        JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
+        scrollDesc.setPreferredSize(new Dimension(380, 60));
+
+        java.awt.Component[][] campos = {
+            {crearLabel("Nombre", labelFont, labelColor), txtNombre},
+            {crearLabel("Tipo", labelFont, labelColor), cmbTipoEquipo},
+            {crearLabel("Marca", labelFont, labelColor), txtMarca},
+            {crearLabel("Número de Serie", labelFont, labelColor), txtSerie},
+            {crearLabel("Estado", labelFont, labelColor), cmbEstadoEquipo},
+            {crearLabel("Ubicación", labelFont, labelColor), txtUbicacion},
+            {crearLabel("", labelFont, labelColor), chkPrestamo},
+            {crearLabel("Tiempo máx. préstamo (días)", labelFont, labelColor), spnTiempo},
+            {crearLabel("Descripción", labelFont, labelColor), scrollDesc}
+        };
+
+        gbc.gridy = 0;
+        for (java.awt.Component[] fila : campos) {
+            gbc.gridx = 0;
+            content.add(fila[0], gbc);
+            gbc.gridy++;
+            content.add(fila[1], gbc);
+            gbc.gridy++;
+        }
+
+        if (!editable) {
+            txtNombre.setEditable(false);
+            cmbTipoEquipo.setEnabled(false);
+            txtMarca.setEditable(false);
+            txtSerie.setEditable(false);
+            cmbEstadoEquipo.setEnabled(false);
+            txtUbicacion.setEditable(false);
+            chkPrestamo.setEnabled(false);
+            spnTiempo.setEnabled(false);
+            txtDescripcion.setEditable(false);
+        }
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        botones.setOpaque(false);
+
+        if (editable) {
+            JButton btnGuardar = crearBotonPrincipal(equipo.getIdEquipo() > 0 ? "Actualizar" : "Guardar", null);
+            btnGuardar.addActionListener(evt -> {
+                try {
+                    equipo.setNombre(txtNombre.getText().trim());
+                    equipo.setTipoEquipo(String.valueOf(cmbTipoEquipo.getSelectedItem()));
+                    equipo.setMarca(txtMarca.getText().trim());
+                    equipo.setNumeroSerie(txtSerie.getText().trim());
+                    equipo.setEstado(displayToEstado(String.valueOf(cmbEstadoEquipo.getSelectedItem())));
+                    equipo.setUbicacion(txtUbicacion.getText().trim());
+                    equipo.setDisponiblePrestamo(chkPrestamo.isSelected());
+                    equipo.setTiempoMaxPrestamo((Integer) spnTiempo.getValue());
+                    equipo.setDescripcion(txtDescripcion.getText().trim());
+
+                    boolean exito;
+                    if (equipo.getIdEquipo() > 0) {
+                        exito = equipoDAO.actualizar(equipo);
+                    } else {
+                        int id = equipoDAO.insertar(equipo);
+                        exito = id > 0;
+                    }
+
+                    if (exito) {
+                        refrescarTabla();
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Error al guardar el equipo.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                            "Error al guardar: " + ex.getMessage(),
+                            "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            botones.add(btnGuardar);
+        }
+
+        JButton btnCerrar = new JButton(editable ? "Cancelar" : "Cerrar");
+        btnCerrar.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        btnCerrar.setForeground(TEXT_SOFT);
+        btnCerrar.setBackground(Color.WHITE);
+        btnCerrar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(10, 18, 10, 18)));
+        btnCerrar.setFocusPainted(false);
+        btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrar.addActionListener(evt -> dialog.dispose());
+        botones.add(btnCerrar);
+
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        content.add(botones, gbc);
+
+        dialog.add(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(padre);
+        dialog.setResizable(false);
+        dialog.setVisible(true);
+    }
+
+    private JLabel crearLabel(String texto, Font font, Color color) {
+        JLabel label = new JLabel(texto);
+        label.setFont(font);
+        label.setForeground(color);
+        return label;
     }
 
     private JComboBox<String> crearCombo(String[] opciones) {
@@ -477,9 +787,9 @@ public class Equipos extends JInternalFrame {
         return row % 2 == 0 ? Color.WHITE : TABLE_ALT;
     }
 
-    private static final class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
+    private class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final JPanel panel = crearPanelAcciones(Color.WHITE);
+        private int editingRow;
 
         @Override
         public Object getCellEditorValue() {
@@ -493,7 +803,25 @@ public class Equipos extends JInternalFrame {
                 boolean isSelected,
                 int row,
                 int column) {
+            editingRow = row;
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 9));
+            panel.setOpaque(true);
             panel.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
+
+            JButton ver = crearBotonAccion("Ver", new EyeIcon(15, SENA_GREEN_DARK));
+            ver.addActionListener(evt -> {
+                mostrarDialogoVer(editingRow);
+                fireEditingStopped();
+            });
+
+            JButton mas = crearBotonIcono(new DotsIcon(15, TEXT_SOFT));
+            mas.addActionListener(evt -> {
+                mostrarPopup(mas, editingRow);
+                fireEditingStopped();
+            });
+
+            panel.add(ver);
+            panel.add(mas);
             return panel;
         }
     }

@@ -13,33 +13,15 @@ public class ConexionDB {
     private static final String PASSWORD = "12345678Ab";
 
     public static Connection conectar() {
-
-        Connection con = null;
-
         try {
-
             Class.forName("org.postgresql.Driver");
-
-            con = DriverManager.getConnection(
-                    URL,
-                    USER,
-                    PASSWORD
-            );
-
-            System.out.println("Conexión exitosaaaaaaaaaaaa");
-
+            Connection con = DriverManager.getConnection(URL, USER, PASSWORD);
+            return con;
         } catch (ClassNotFoundException e) {
-
-            System.out.println("Driver PostgreSQL no encontrado");
-            e.printStackTrace();
-
+            throw new RuntimeException("Driver PostgreSQL no encontrado", e);
         } catch (SQLException e) {
-
-            System.out.println("Error al conectar");
-            e.printStackTrace();
+            throw new RuntimeException("Error al conectar a la base de datos: " + e.getMessage(), e);
         }
-
-        return con;
     }
 
     public static void getInstance() {

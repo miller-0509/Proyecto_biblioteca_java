@@ -54,6 +54,14 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import Modelo.Libro;
+import Modelo.LibroDAO;
 
 public class Libros extends JInternalFrame {
 
@@ -73,11 +81,13 @@ public class Libros extends JInternalFrame {
     private JTable tablaLibros;
     private DefaultTableModel modeloLibros;
     private TableRowSorter<DefaultTableModel> filtroTabla;
+    private LibroDAO libroDAO;
 
     public Libros() {
         initComponents();
         construirVista();
-        cargarDatosDemo();
+        libroDAO = new LibroDAO();
+        cargarLibros();
         aplicarFiltros();
     }
 
@@ -120,7 +130,20 @@ public class Libros extends JInternalFrame {
 
         JButton btnRegistrar = crearBotonPrincipal("Registrar Libro", new PlusIcon(13, Color.WHITE));
         btnRegistrar.setPreferredSize(new Dimension(172, 42));
-        btnRegistrar.addActionListener(evt -> mostrarMensajeAccion("Registrar Libro"));
+        btnRegistrar.addActionListener(evt -> {
+            try {
+                Libro nuevo = new Libro();
+                nuevo.setEstado("disponible");
+                nuevo.setDisponiblePrestamo(true);
+                nuevo.setTiempoMaxPrestamo(7);
+                mostrarDialogoLibro(nuevo, true);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
@@ -309,13 +332,33 @@ public class Libros extends JInternalFrame {
         });
     }
 
-    private void cargarDatosDemo() {
-        modeloLibros.addRow(new Object[]{"#3", "Neuromancer", "CIENCIA FICCIÓN / CYBERPUNK", "LIB-CYB-78421-XA", "Disponible", "Biblioteca", "", "William Gibson"});
-        modeloLibros.addRow(new Object[]{"#2", "El principito", "FÁBULA", "ZQW5428", "Disponible", "Ambiente 208", "", "Antoine de Saint-Exupéry"});
-        modeloLibros.addRow(new Object[]{"#4", "El coronel no tiene quien le escriba", "NOVELA / REALISMO MÁGICO", "XOEW83XL01", "Disponible", "Biblioteca", "", "Gabriel García Márquez"});
-        modeloLibros.addRow(new Object[]{"#1", "Cien años de soledad", "NOVELA / REALISMO MÁGICO", "CVB34567", "Prestado", "Biblioteca", "", "Gabriel García Márquez"});
-        modeloLibros.addRow(new Object[]{"#5", "Clean Code", "TECNOLOGÍA", "LIB-TEC-90218-CC", "Reservado", "Sala de lectura", "", "Robert C. Martin"});
-        modeloLibros.addRow(new Object[]{"#6", "Historia mínima de Colombia", "HISTORIA", "LIB-HIS-11028-CO", "En mantenimiento", "Restauración", "", "Jorge Orlando Melo"});
+    private void cargarLibros() {
+        modeloLibros.setRowCount(0);
+        try {
+            java.util.List<Libro> lista = libroDAO.listarTodos();
+            if (lista == null) return;
+            for (Libro l : lista) {
+                modeloLibros.addRow(new Object[]{
+                    l.getIdLibro(),
+                    l.getTitulo(),
+                    l.getGenero(),
+                    l.getCodigoUnico(),
+                    estadoToDisplay(l.getEstado()),
+                    l.getUbicacion(),
+                    "",
+                    l.getAutor()
+                });
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar libros: " + ex.getMessage(),
+                    "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void refrescarTabla() {
+        cargarLibros();
     }
 
     private void aplicarFiltros() {
@@ -347,6 +390,272 @@ public class Libros extends JInternalFrame {
         }
 
         filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
+    }
+
+    private String estadoToDisplay(String estado) {
+        if (estado == null) return "Disponible";
+        switch (estado) {
+            case "disponible": return "Disponible";
+            case "prestado": return "Prestado";
+            case "mantenimiento": return "En mantenimiento";
+            case "dañado": return "Dañado";
+            default: return estado;
+        }
+    }
+
+    private String displayToEstado(String display) {
+        if (display == null) return "disponible";
+        switch (display) {
+            case "Disponible": return "disponible";
+            case "Prestado": return "prestado";
+            case "Reservado": return "prestado";
+            case "En mantenimiento": return "mantenimiento";
+            case "Dañado": return "dañado";
+            default: return "disponible";
+        }
+    }
+
+    private void mostrarPopup(Component invoker, int row) {
+        int modelRow = tablaLibros.convertRowIndexToModel(row);
+        if (modelRow < 0) return;
+        JPopupMenu popup = new JPopupMenu();
+        popup.setBorder(BorderFactory.createLineBorder(BORDER));
+        popup.add(crearItemMenuAccion("Ver", modelRow));
+        popup.add(crearItemMenuAccion("Editar", modelRow));
+        popup.add(crearItemMenuAccion("Eliminar", modelRow));
+        popup.show(invoker, 0, invoker.getHeight());
+    }
+
+    private JMenuItem crearItemMenuAccion(String texto, int modelRow) {
+        JMenuItem item = new JMenuItem(texto);
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground("Eliminar".equals(texto) ? new Color(185, 28, 28) : TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.addActionListener(evt -> {
+            if ("Ver".equals(texto)) mostrarDialogoVer(modelRow);
+            else if ("Editar".equals(texto)) mostrarDialogoEditar(modelRow);
+            else if ("Eliminar".equals(texto)) eliminarLibro(modelRow);
+        });
+        return item;
+    }
+
+    private void mostrarDialogoVer(int modelRow) {
+        try {
+            Object idObj = modeloLibros.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            Libro l = libroDAO.buscarPorId(id);
+            if (l != null) mostrarDialogoLibro(l, false);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar detalles del libro: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoEditar(int modelRow) {
+        try {
+            Object idObj = modeloLibros.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            Libro l = libroDAO.buscarPorId(id);
+            if (l != null) mostrarDialogoLibro(l, true);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar datos del libro: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void eliminarLibro(int modelRow) {
+        try {
+            Object idObj = modeloLibros.getValueAt(modelRow, 0);
+            if (idObj == null) return;
+            int id = Integer.parseInt(idObj.toString());
+            String titulo = String.valueOf(modeloLibros.getValueAt(modelRow, 1));
+
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "¿Está seguro de eliminar el libro \"" + titulo + "\"?",
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (libroDAO.eliminarLogico(id)) {
+                    refrescarTabla();
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "Error al eliminar el libro.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al eliminar: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void mostrarDialogoLibro(Libro libro, boolean editable) {
+        java.awt.Window padre = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(padre, editable ? "Registrar / Editar Libro" : "Detalles del Libro",
+                java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        JPanel content = new JPanel(new GridBagLayout());
+        content.setBorder(new EmptyBorder(20, 24, 20, 24));
+        content.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(6, 0, 6, 0);
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+
+        Font labelFont = new Font("SansSerif", Font.BOLD, 12);
+        Color labelColor = TEXT_SOFT;
+
+        JTextField txtTitulo = new JTextField(libro.getTitulo());
+        txtTitulo.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtAutor = new JTextField(libro.getAutor());
+        txtAutor.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbGeneroLibro = new JComboBox<>(new String[]{"Novela", "Ciencia ficción", "Fábula", "Historia", "Tecnología", "Educación", "Otros"});
+        if (libro.getGenero() != null) cmbGeneroLibro.setSelectedItem(libro.getGenero());
+        cmbGeneroLibro.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtCodigo = new JTextField(libro.getCodigoUnico());
+        txtCodigo.setPreferredSize(new Dimension(380, 36));
+
+        JComboBox<String> cmbEstadoLibro = new JComboBox<>(new String[]{"Disponible", "Prestado", "En mantenimiento", "Dañado"});
+        cmbEstadoLibro.setSelectedItem(estadoToDisplay(libro.getEstado()));
+        cmbEstadoLibro.setPreferredSize(new Dimension(380, 36));
+
+        JTextField txtUbicacion = new JTextField(libro.getUbicacion());
+        txtUbicacion.setPreferredSize(new Dimension(380, 36));
+
+        JCheckBox chkPrestamo = new JCheckBox("Disponible para préstamo", libro.isDisponiblePrestamo());
+        chkPrestamo.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
+        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(libro.getTiempoMaxPrestamo(), 0, 365, 1);
+        JSpinner spnTiempo = new JSpinner(spinnerModel);
+        spnTiempo.setPreferredSize(new Dimension(120, 36));
+
+        JTextArea txtDescripcion = new JTextArea(libro.getDescripcion(), 3, 30);
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setWrapStyleWord(true);
+        JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
+        scrollDesc.setPreferredSize(new Dimension(380, 60));
+
+        java.awt.Component[][] campos = {
+            {crearLabel("Título", labelFont, labelColor), txtTitulo},
+            {crearLabel("Autor", labelFont, labelColor), txtAutor},
+            {crearLabel("Género", labelFont, labelColor), cmbGeneroLibro},
+            {crearLabel("Código Único", labelFont, labelColor), txtCodigo},
+            {crearLabel("Estado", labelFont, labelColor), cmbEstadoLibro},
+            {crearLabel("Ubicación", labelFont, labelColor), txtUbicacion},
+            {crearLabel("", labelFont, labelColor), chkPrestamo},
+            {crearLabel("Tiempo máx. préstamo (días)", labelFont, labelColor), spnTiempo},
+            {crearLabel("Descripción", labelFont, labelColor), scrollDesc}
+        };
+
+        gbc.gridy = 0;
+        for (java.awt.Component[] fila : campos) {
+            gbc.gridx = 0;
+            content.add(fila[0], gbc);
+            gbc.gridy++;
+            content.add(fila[1], gbc);
+            gbc.gridy++;
+        }
+
+        if (!editable) {
+            txtTitulo.setEditable(false);
+            txtAutor.setEditable(false);
+            cmbGeneroLibro.setEnabled(false);
+            txtCodigo.setEditable(false);
+            cmbEstadoLibro.setEnabled(false);
+            txtUbicacion.setEditable(false);
+            chkPrestamo.setEnabled(false);
+            spnTiempo.setEnabled(false);
+            txtDescripcion.setEditable(false);
+        }
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        botones.setOpaque(false);
+
+        if (editable) {
+            JButton btnGuardar = crearBotonPrincipal(libro.getIdLibro() > 0 ? "Actualizar" : "Guardar", null);
+            btnGuardar.addActionListener(evt -> {
+                try {
+                    libro.setTitulo(txtTitulo.getText().trim());
+                    libro.setAutor(txtAutor.getText().trim());
+                    libro.setGenero(String.valueOf(cmbGeneroLibro.getSelectedItem()));
+                    libro.setCodigoUnico(txtCodigo.getText().trim());
+                    libro.setEstado(displayToEstado(String.valueOf(cmbEstadoLibro.getSelectedItem())));
+                    libro.setUbicacion(txtUbicacion.getText().trim());
+                    libro.setDisponiblePrestamo(chkPrestamo.isSelected());
+                    libro.setTiempoMaxPrestamo((Integer) spnTiempo.getValue());
+                    libro.setDescripcion(txtDescripcion.getText().trim());
+
+                    boolean exito;
+                    if (libro.getIdLibro() > 0) {
+                        exito = libroDAO.actualizar(libro);
+                    } else {
+                        int id = libroDAO.insertar(libro);
+                        exito = id > 0;
+                    }
+
+                    if (exito) {
+                        refrescarTabla();
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog,
+                                "Error al guardar el libro.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(dialog,
+                            "Error al guardar: " + ex.getMessage(),
+                            "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            botones.add(btnGuardar);
+        }
+
+        JButton btnCerrar = new JButton(editable ? "Cancelar" : "Cerrar");
+        btnCerrar.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        btnCerrar.setForeground(TEXT_SOFT);
+        btnCerrar.setBackground(Color.WHITE);
+        btnCerrar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER),
+                new EmptyBorder(10, 18, 10, 18)));
+        btnCerrar.setFocusPainted(false);
+        btnCerrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrar.addActionListener(evt -> dialog.dispose());
+        botones.add(btnCerrar);
+
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        content.add(botones, gbc);
+
+        dialog.add(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(padre);
+        dialog.setResizable(false);
+        dialog.setVisible(true);
+    }
+
+    private JLabel crearLabel(String texto, Font font, Color color) {
+        JLabel label = new JLabel(texto);
+        label.setFont(font);
+        label.setForeground(color);
+        return label;
     }
 
     private JComboBox<String> crearCombo(String[] opciones) {
@@ -594,9 +903,9 @@ public class Libros extends JInternalFrame {
         return row % 2 == 0 ? Color.WHITE : TABLE_ALT;
     }
 
-    private static final class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
+    private class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
 
-        private final JPanel panel = crearPanelAcciones(Color.WHITE);
+        private int editingRow;
 
         @Override
         public Object getCellEditorValue() {
@@ -610,7 +919,25 @@ public class Libros extends JInternalFrame {
                 boolean isSelected,
                 int row,
                 int column) {
+            editingRow = row;
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
+            panel.setOpaque(true);
             panel.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
+
+            JButton ver = crearBotonIconoContorno(new EyeIcon(15, SENA_GREEN_DARK), SENA_GREEN, Color.WHITE, new Dimension(58, 42));
+            ver.addActionListener(evt -> {
+                mostrarDialogoVer(editingRow);
+                fireEditingStopped();
+            });
+
+            JButton mas = crearBotonIconoContorno(new DotsIcon(15, TEXT_SOFT), BORDER, Color.WHITE, new Dimension(42, 42));
+            mas.addActionListener(evt -> {
+                mostrarPopup(mas, editingRow);
+                fireEditingStopped();
+            });
+
+            panel.add(ver);
+            panel.add(mas);
             return panel;
         }
     }
