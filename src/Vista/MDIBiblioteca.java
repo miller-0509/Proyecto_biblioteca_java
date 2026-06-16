@@ -407,6 +407,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
+        if ("Sanciones".equals(modulo) || modulo.contains("Sanciones")) {
+            abrirModuloSanciones();
+            return;
+        }
+
         JOptionPane.showMessageDialog(
                 this,
                 "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
@@ -506,6 +511,42 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             // No bloqueamos la apertura por un veto visual.
         }
         usuarios.toFront();
+    }
+
+    private void abrirModuloSanciones() {
+        System.out.println("[MDIBiblioteca] Abriendo modulo Sanciones...");
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof FRMSanciones) {
+                try {
+                    frame.setIcon(false);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                    // No bloqueamos la apertura por un veto visual.
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        try {
+            FRMSanciones sanciones = new FRMSanciones();
+            sanciones.setVisible(true);
+            sanciones.setClosable(true);
+            sanciones.setIconifiable(true);
+            sanciones.setMaximizable(true);
+            sanciones.setResizable(true);
+            sanciones.setSize(1120, 720);
+            sanciones.setLocation(50, 50);
+            escritorio.add(sanciones);
+            sanciones.setSelected(true);
+            sanciones.toFront();
+            System.out.println("[MDIBiblioteca] Modulo Sanciones abierto correctamente.");
+        } catch (PropertyVetoException ex) {
+            // No bloqueamos la apertura por un veto visual.
+        } catch (Exception ex) {
+            System.out.println("[MDIBiblioteca] Error abriendo modulo Sanciones: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     private void mostrarModuloEnDesarrollo(String modulo) {
