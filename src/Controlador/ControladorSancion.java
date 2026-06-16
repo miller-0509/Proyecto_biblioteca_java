@@ -36,6 +36,10 @@ public class ControladorSancion {
         return modeloSancion.condonar(idSancion);
     }
 
+    public boolean eliminar(int idSancion) {
+        return modeloSancion.eliminar(idSancion);
+    }
+
     public Sancion registrarAutomaticamente(
             Integer idPrestamo,
             Integer idUsuario,

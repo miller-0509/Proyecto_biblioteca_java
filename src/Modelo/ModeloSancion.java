@@ -13,17 +13,18 @@ import java.util.List;
 public class ModeloSancion {
 
     private static final String SQL_BASE =
-            "SELECT * FROM sanciones ";
+            "SELECT m.*, u.nombres AS usuario_nombres, u.apellidos AS usuario_apellidos, u.correo AS usuario_correo "
+          + "FROM multas m LEFT JOIN usuarios u ON u.id_usuario = m.id_usuario ";
 
     public List<Sancion> listarTodas() {
         List<Sancion> lista = new ArrayList<>();
-        String sql = SQL_BASE + "ORDER BY id_sancion";
+        String sql = SQL_BASE + "ORDER BY m.id_multa";
 
         try (Connection con = ConexionDB.conectar();
              PreparedStatement psSchema = con.prepareStatement(
-                     "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'sanciones'");
+                     "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'multas'");
              ResultSet rsSchema = psSchema.executeQuery();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) AS total FROM sanciones");
+             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) AS total FROM multas");
              ResultSet rsCount = ps.executeQuery()) {
             while (rsSchema.next()) {
                 System.out.println("[ModeloSancion] Tabla encontrada: "
@@ -36,7 +37,7 @@ public class ModeloSancion {
             System.out.println("[ModeloSancion] COUNT sanciones = " + total);
 
             try (PreparedStatement psEstado = con.prepareStatement(
-                    "SELECT estado, COUNT(*) AS total FROM sanciones GROUP BY estado ORDER BY estado");
+                    "SELECT estado, COUNT(*) AS total FROM multas GROUP BY estado ORDER BY estado");
                  ResultSet rsEstado = psEstado.executeQuery()) {
                 System.out.println("[ModeloSancion] Conteo por estado:");
                 while (rsEstado.next()) {
@@ -73,30 +74,43 @@ public class ModeloSancion {
     }
 
     public List<Sancion> buscar(String texto, String estado) {
+        List<Sancion> base = listarTodas();
         List<Sancion> lista = new ArrayList<>();
-        String sql = SQL_BASE + "ORDER BY id_sancion";
+        String textoNorm = texto != null ? texto.trim().toLowerCase() : "";
+        String estadoNorm = estado != null ? estado.trim().toLowerCase() : "todos";
+        boolean filtraTexto = !textoNorm.isEmpty();
+        boolean filtraEstado = !estadoNorm.isEmpty() && !"todos".equals(estadoNorm);
 
-        try (Connection con = ConexionDB.conectar();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        for (Sancion s : base) {
+            boolean coincideTexto = true;
+            boolean coincideEstado = true;
 
-            System.out.println("[ModeloSancion] SQL buscar = " + sql);
-            while (rs.next()) {
-                Sancion sancion = mapearSancion(rs);
-                System.out.println("[ModeloSancion] Sancion encontrada: " + sancion.getIdSancion());
-                lista.add(sancion);
+            if (filtraTexto) {
+                String combinado = (String.valueOf(s.getIdSancion()) + " "
+                        + valueOrEmpty(s.getCorreoUsuario()) + " "
+                        + valueOrEmpty(s.getDetalle()) + " "
+                        + valueOrEmpty(s.getTipoRecurso()) + " "
+                        + valueOrEmpty(s.getNombreRecurso()) + " "
+                        + valueOrEmpty(s.getEstado())).toLowerCase();
+                coincideTexto = combinado.contains(textoNorm);
             }
-            System.out.println("[ModeloSancion] Cantidad: " + lista.size());
-        } catch (SQLException ex) {
-            System.out.println("[ModeloSancion] buscar fallo: " + ex.getMessage());
-            ex.printStackTrace();
-            throw new RuntimeException("Error al buscar sanciones: " + ex.getMessage(), ex);
+
+            if (filtraEstado) {
+                coincideEstado = valueOrEmpty(s.getEstado()).toLowerCase().equals(estadoNorm);
+            }
+
+            if (coincideTexto && coincideEstado) {
+                lista.add(s);
+            }
         }
+
+        System.out.println("[ModeloSancion] buscar: registros filtrados = " + lista.size());
         return lista;
     }
 
     public Sancion buscarPorId(int idSancion) {
-        String sql = SQL_BASE + "WHERE id_sancion = ?";
+        String sql = "SELECT m.*, u.nombres AS usuario_nombres, u.apellidos AS usuario_apellidos, u.correo AS usuario_correo "
+                   + "FROM multas m LEFT JOIN usuarios u ON u.id_usuario = m.id_usuario WHERE m.id_multa = ?";
 
         try (Connection con = ConexionDB.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -115,7 +129,7 @@ public class ModeloSancion {
     }
 
     public int insertar(Sancion s) {
-        String sql = "INSERT INTO sanciones (id_prestamo, id_usuario, fecha_sancion, correo_usuario, "
+        String sql = "INSERT INTO multas (id_prestamo, id_usuario, fecha_sancion, correo_usuario, "
                    + "tipo_recurso, nombre_recurso, dias_retraso, dias_suspension, estado, detalle, "
                    + "fecha_inicio_suspension, fecha_fin_suspension, condonada) "
                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::text, ?, ?, ?, ?)";
@@ -151,10 +165,10 @@ public class ModeloSancion {
     }
 
     public boolean actualizar(Sancion s) {
-        String sql = "UPDATE sanciones SET id_prestamo = ?, id_usuario = ?, fecha_sancion = ?, correo_usuario = ?, "
+        String sql = "UPDATE multas SET id_prestamo = ?, id_usuario = ?, fecha_sancion = ?, correo_usuario = ?, "
                    + "tipo_recurso = ?, nombre_recurso = ?, dias_retraso = ?, dias_suspension = ?, estado = ?::text, "
                    + "detalle = ?, fecha_inicio_suspension = ?, fecha_fin_suspension = ?, condonada = ? "
-                   + "WHERE id_sancion = ?";
+                   + "WHERE id_multa = ?";
 
         try (Connection con = ConexionDB.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -181,7 +195,7 @@ public class ModeloSancion {
     }
 
     public boolean condonar(int idSancion) {
-        String sql = "UPDATE sanciones SET estado = 'condonada', condonada = true WHERE id_sancion = ?";
+        String sql = "UPDATE multas SET estado = 'condonada', condonada = true WHERE id_multa = ?";
         try (Connection con = ConexionDB.conectar();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idSancion);
@@ -190,6 +204,19 @@ public class ModeloSancion {
             System.out.println("[ModeloSancion] condonar fallo: " + ex.getMessage());
             ex.printStackTrace();
             throw new RuntimeException("Error al condonar sancion: " + ex.getMessage(), ex);
+        }
+    }
+
+    public boolean eliminar(int idSancion) {
+        String sql = "DELETE FROM multas WHERE id_multa = ?";
+        try (Connection con = ConexionDB.conectar();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idSancion);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException ex) {
+            System.out.println("[ModeloSancion] eliminar fallo: " + ex.getMessage());
+            ex.printStackTrace();
+            throw new RuntimeException("Error al eliminar sancion: " + ex.getMessage(), ex);
         }
     }
 
@@ -231,23 +258,100 @@ public class ModeloSancion {
 
     private Sancion mapearSancion(ResultSet rs) throws SQLException {
         Sancion s = new Sancion();
-        s.setIdSancion(rs.getInt("id_sancion"));
-        int idPrestamo = rs.getInt("id_prestamo");
-        s.setIdPrestamo(rs.wasNull() ? null : idPrestamo);
-        int idUsuario = rs.getInt("id_usuario");
-        s.setIdUsuario(rs.wasNull() ? null : idUsuario);
-        s.setFechaSancion(rs.getDate("fecha_sancion"));
-        s.setCorreoUsuario(rs.getString("correo_usuario"));
-        s.setTipoRecurso(rs.getString("tipo_recurso"));
-        s.setNombreRecurso(rs.getString("nombre_recurso"));
-        s.setDiasRetraso(rs.getInt("dias_retraso"));
-        s.setDiasSuspension(rs.getInt("dias_suspension"));
-        s.setEstado(rs.getString("estado"));
-        s.setDetalle(rs.getString("detalle"));
-        s.setFechaInicioSuspension(rs.getDate("fecha_inicio_suspension"));
-        s.setFechaFinSuspension(rs.getDate("fecha_fin_suspension"));
-        Object cond = rs.getObject("condonada");
-        s.setCondonada(cond != null ? rs.getBoolean("condonada") : null);
+        Integer idSancion = getIntFlexible(rs, "id_multa", "id_sancion");
+        s.setIdSancion(idSancion != null ? idSancion : 0);
+        Integer idPrestamo = getIntFlexible(rs, "id_prestamo");
+        s.setIdPrestamo(idPrestamo);
+        Integer idUsuario = getIntFlexible(rs, "id_usuario", "id_usuario_sancion");
+        s.setIdUsuario(idUsuario);
+        s.setFechaSancion(getDateFlexible(rs, "fecha_sancion", "fecha_creacion", "fecha_registro", "fecha", "created_at", "updated_at"));
+        if (s.getFechaSancion() == null) {
+            s.setFechaSancion(getFirstDateColumn(rs));
+        }
+        s.setCorreoUsuario(getStringFlexible(rs, "usuario_correo", "correo_usuario", "correo"));
+        s.setTipoRecurso(getStringFlexible(rs, "tipo_recurso", "recurso_tipo", "tipo"));
+        s.setNombreRecurso(getStringFlexible(rs, "nombre_recurso", "recurso_nombre", "nombre"));
+        s.setDiasRetraso(getIntFlexible(rs, "dias_retraso", "retraso_dias"));
+        s.setDiasSuspension(getIntFlexible(rs, "dias_suspension", "suspension_dias"));
+        s.setEstado(getStringFlexible(rs, "estado", "estado_multa"));
+        s.setDetalle(getStringFlexible(rs, "detalle", "observacion", "descripcion"));
+        s.setFechaInicioSuspension(getDateFlexible(rs, "fecha_inicio_suspension", "fecha_inicio"));
+        s.setFechaFinSuspension(getDateFlexible(rs, "fecha_fin_suspension", "fecha_fin"));
+        Object cond = getObjectFlexible(rs, "condonada", "es_condonada");
+        s.setCondonada(cond != null ? Boolean.valueOf(String.valueOf(cond)) : null);
         return s;
+    }
+
+    private String getStringFlexible(ResultSet rs, String... names) throws SQLException {
+        for (String name : names) {
+            try {
+                return rs.getString(name);
+            } catch (SQLException ex) {
+                // probar siguiente nombre
+            }
+        }
+        return null;
+    }
+
+    private Integer getIntFlexible(ResultSet rs, String... names) throws SQLException {
+        for (String name : names) {
+            try {
+                int value = rs.getInt(name);
+                if (!rs.wasNull()) {
+                    return Integer.valueOf(value);
+                }
+            } catch (SQLException ex) {
+                // probar siguiente nombre
+            }
+        }
+        return null;
+    }
+
+    private Date getDateFlexible(ResultSet rs, String... names) throws SQLException {
+        for (String name : names) {
+            try {
+                Date value = rs.getDate(name);
+                if (value != null) {
+                    return value;
+                }
+            } catch (SQLException ex) {
+                // probar siguiente nombre
+            }
+        }
+        return null;
+    }
+
+    private Date getFirstDateColumn(ResultSet rs) throws SQLException {
+        int cols = rs.getMetaData().getColumnCount();
+        for (int i = 1; i <= cols; i++) {
+            try {
+                String label = rs.getMetaData().getColumnLabel(i).toLowerCase();
+                if (label.contains("fecha") || label.contains("date") || label.contains("time")) {
+                    Date d = rs.getDate(i);
+                    if (d != null) {
+                        System.out.println("[ModeloSancion] Fecha detectada en columna: " + label + " = " + d);
+                        return d;
+                    }
+                }
+            } catch (SQLException ex) {
+                // seguir buscando
+            }
+        }
+        return null;
+    }
+
+    private Object getObjectFlexible(ResultSet rs, String... names) throws SQLException {
+        for (String name : names) {
+            try {
+                return rs.getObject(name);
+            } catch (SQLException ex) {
+                // probar siguiente nombre
+            }
+        }
+        return null;
+    }
+
+    private String valueOrEmpty(String value) {
+        return value != null ? value : "";
     }
 }
