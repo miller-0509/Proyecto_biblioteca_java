@@ -25,17 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import javax.swing.AbstractCellEditor;
-import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingUtilities;
-import Modelo.Equipo;
-import Controlador.EquipoControlador;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -45,7 +34,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -62,12 +54,25 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JPasswordField;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import Modelo.Usuario;
+import Controlador.UsuarioControlador;
 
-public class Equipos extends JInternalFrame {
+public class Usuarios extends JInternalFrame {
 
     private static final Color SENA_GREEN = new Color(46, 170, 84);
     private static final Color SENA_GREEN_DARK = new Color(24, 123, 61);
     private static final Color SENA_GREEN_SOFT = new Color(240, 252, 244);
+    private static final Color BLUE = new Color(78, 117, 217);
+    private static final Color BLUE_SOFT = new Color(235, 242, 255);
+    private static final Color RED = new Color(215, 74, 74);
+    private static final Color RED_SOFT = new Color(253, 231, 231);
     private static final Color TEXT_DARK = new Color(28, 34, 45);
     private static final Color TEXT_SOFT = new Color(96, 105, 121);
     private static final Color BORDER = new Color(224, 229, 236);
@@ -76,23 +81,23 @@ public class Equipos extends JInternalFrame {
     private static final Color TABLE_HOVER = new Color(236, 248, 241);
 
     private PlaceholderTextField txtBuscar;
+    private JComboBox<String> cmbRol;
     private JComboBox<String> cmbEstado;
-    private JComboBox<String> cmbTipo;
-    private JTable tablaEquipos;
-    private DefaultTableModel modeloEquipos;
+    private JTable tablaUsuarios;
+    private DefaultTableModel modeloUsuarios;
     private TableRowSorter<DefaultTableModel> filtroTabla;
-    private EquipoControlador equipoControlador;
+    private UsuarioControlador usuarioControlador;
 
-    public Equipos() {
+    public Usuarios() {
         initComponents();
         construirVista();
-        equipoControlador = new EquipoControlador();
-        cargarEquipos();
+        usuarioControlador = new UsuarioControlador();
+        cargarUsuarios();
         aplicarFiltros();
     }
 
     private void construirVista() {
-        setTitle("Gestión de Equipos");
+        setTitle("Gestión de Usuarios");
         setClosable(true);
         setMaximizable(true);
         setIconifiable(true);
@@ -117,11 +122,11 @@ public class Equipos extends JInternalFrame {
         textos.setOpaque(false);
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
 
-        JLabel titulo = new JLabel("Gestión de Equipos");
+        JLabel titulo = new JLabel("Gestión de Usuarios");
         titulo.setFont(new Font("SansSerif", Font.BOLD, 26));
         titulo.setForeground(TEXT_DARK);
 
-        JLabel subtitulo = new JLabel("Inventario, estados y acciones rápidas de los equipos del sistema.");
+        JLabel subtitulo = new JLabel("Administración de aprendices, instructores y administradores.");
         subtitulo.setFont(new Font("SansSerif", Font.PLAIN, 13));
         subtitulo.setForeground(TEXT_SOFT);
 
@@ -129,15 +134,13 @@ public class Equipos extends JInternalFrame {
         textos.add(Box.createVerticalStrut(5));
         textos.add(subtitulo);
 
-        JButton btnRegistrar = crearBotonPrincipal("Registrar Equipo", new PlusIcon(13, Color.WHITE));
-        btnRegistrar.setPreferredSize(new Dimension(178, 42));
-        btnRegistrar.addActionListener(evt -> {
+        JButton btnNuevo = crearBotonPrincipal("Nuevo Usuario", new UserPlusIcon(13, Color.WHITE));
+        btnNuevo.setPreferredSize(new Dimension(176, 42));
+        btnNuevo.addActionListener(evt -> {
             try {
-                Equipo nuevo = new Equipo();
-                nuevo.setEstado("disponible");
-                nuevo.setDisponiblePrestamo(true);
-                nuevo.setTiempoMaxPrestamo(7);
-                mostrarDialogoEquipo(nuevo, true);
+                Usuario nuevo = new Usuario();
+                nuevo.setEstado("activo");
+                mostrarDialogoUsuario(nuevo, true);
             } catch (Exception ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(this,
@@ -148,7 +151,7 @@ public class Equipos extends JInternalFrame {
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         acciones.setOpaque(false);
-        acciones.add(btnRegistrar);
+        acciones.add(btnNuevo);
 
         encabezado.add(textos, BorderLayout.WEST);
         encabezado.add(acciones, BorderLayout.EAST);
@@ -161,7 +164,7 @@ public class Equipos extends JInternalFrame {
         panel.setBorder(new EmptyBorder(18, 18, 18, 18));
 
         panel.add(crearBarraFiltros(), BorderLayout.NORTH);
-        panel.add(crearTablaEquipos(), BorderLayout.CENTER);
+        panel.add(crearTablaUsuarios(), BorderLayout.CENTER);
         return panel;
     }
 
@@ -169,32 +172,31 @@ public class Equipos extends JInternalFrame {
         JPanel barra = new JPanel(new GridBagLayout());
         barra.setOpaque(false);
 
-        txtBuscar = new PlaceholderTextField("Nombre, serie o marca...");
+        txtBuscar = new PlaceholderTextField("Nombre o correo...");
         txtBuscar.setPreferredSize(new Dimension(320, 42));
         estilizarCampoTexto(txtBuscar);
 
-        cmbEstado = crearCombo(new String[]{
-            "Todos los estados",
-            "Disponible",
-            "En préstamo",
-            "En mantenimiento"
+        cmbRol = crearCombo(new String[]{
+            "Todos los roles",
+            "Administrador",
+            "Bibliotecario",
+            "Almacenista",
+            "Aprendiz",
+            "Instructor"
         });
 
-        cmbTipo = crearCombo(new String[]{
-            "Todos los tipos",
-            "Monitor",
-            "Proyector",
-            "Teclado",
-            "Tablet",
-            "Otros"
+        cmbEstado = crearCombo(new String[]{
+            "Todos los estados",
+            "Activo",
+            "Inactivo"
         });
 
         JButton btnBuscar = crearBotonPrincipal("Buscar", new SearchIcon(15, Color.WHITE));
         btnBuscar.setPreferredSize(new Dimension(112, 42));
         btnBuscar.addActionListener(evt -> aplicarFiltros());
         txtBuscar.addActionListener(evt -> aplicarFiltros());
+        cmbRol.addActionListener(evt -> aplicarFiltros());
         cmbEstado.addActionListener(evt -> aplicarFiltros());
-        cmbTipo.addActionListener(evt -> aplicarFiltros());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -203,15 +205,15 @@ public class Equipos extends JInternalFrame {
 
         gbc.gridx = 0;
         gbc.weightx = 1.0;
-        barra.add(crearCampoConEtiqueta("Buscar equipo", txtBuscar), gbc);
+        barra.add(crearCampoConEtiqueta("Buscar usuario", txtBuscar), gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0.28;
-        barra.add(crearCampoConEtiqueta("Estado", cmbEstado), gbc);
+        barra.add(crearCampoConEtiqueta("Rol", cmbRol), gbc);
 
         gbc.gridx = 2;
         gbc.weightx = 0.28;
-        barra.add(crearCampoConEtiqueta("Tipo", cmbTipo), gbc);
+        barra.add(crearCampoConEtiqueta("Estado", cmbEstado), gbc);
 
         gbc.gridx = 3;
         gbc.weightx = 0.0;
@@ -225,7 +227,7 @@ public class Equipos extends JInternalFrame {
         JPanel panel = new JPanel(new BorderLayout(0, 7));
         panel.setOpaque(false);
 
-        JLabel label = new JLabel(etiqueta);
+        JLabel label = new JLabel(etiqueta.toUpperCase());
         label.setFont(new Font("SansSerif", Font.BOLD, 12));
         label.setForeground(TEXT_SOFT);
 
@@ -234,35 +236,35 @@ public class Equipos extends JInternalFrame {
         return panel;
     }
 
-    private JScrollPane crearTablaEquipos() {
-        modeloEquipos = new DefaultTableModel(
-                new Object[]{"ID", "Nombre", "Tipo", "Número de Serie", "Estado", "Ubicación", "Acciones", "Marca"},
+    private JScrollPane crearTablaUsuarios() {
+        modeloUsuarios = new DefaultTableModel(
+                new Object[]{"Avatar", "Nombre Completo", "Correo", "Rol", "Estado", "Acciones", "ID"},
                 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 6;
+                return column == 5;
             }
         };
 
-        tablaEquipos = new JTable(modeloEquipos);
-        filtroTabla = new TableRowSorter<>(modeloEquipos);
-        tablaEquipos.setRowSorter(filtroTabla);
+        tablaUsuarios = new JTable(modeloUsuarios);
+        filtroTabla = new TableRowSorter<>(modeloUsuarios);
+        tablaUsuarios.setRowSorter(filtroTabla);
 
-        tablaEquipos.setRowHeight(54);
-        tablaEquipos.setShowVerticalLines(false);
-        tablaEquipos.setShowHorizontalLines(true);
-        tablaEquipos.setGridColor(new Color(235, 239, 244));
-        tablaEquipos.setIntercellSpacing(new Dimension(0, 0));
-        tablaEquipos.setSelectionBackground(new Color(231, 246, 236));
-        tablaEquipos.setSelectionForeground(TEXT_DARK);
-        tablaEquipos.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        tablaEquipos.setForeground(TEXT_DARK);
-        tablaEquipos.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        tablaEquipos.setFillsViewportHeight(true);
+        tablaUsuarios.setRowHeight(68);
+        tablaUsuarios.setShowVerticalLines(false);
+        tablaUsuarios.setShowHorizontalLines(true);
+        tablaUsuarios.setGridColor(new Color(235, 239, 244));
+        tablaUsuarios.setIntercellSpacing(new Dimension(0, 0));
+        tablaUsuarios.setSelectionBackground(new Color(231, 246, 236));
+        tablaUsuarios.setSelectionForeground(TEXT_DARK);
+        tablaUsuarios.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        tablaUsuarios.setForeground(TEXT_DARK);
+        tablaUsuarios.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        tablaUsuarios.setFillsViewportHeight(true);
         instalarHoverTabla();
 
-        JTableHeader header = tablaEquipos.getTableHeader();
+        JTableHeader header = tablaUsuarios.getTableHeader();
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 44));
         header.setFont(new Font("SansSerif", Font.BOLD, 12));
         header.setForeground(TEXT_SOFT);
@@ -270,87 +272,83 @@ public class Equipos extends JInternalFrame {
         header.setBorder(new MatteBorder(0, 0, 1, 0, BORDER));
         header.setReorderingAllowed(false);
 
-        tablaEquipos.setDefaultRenderer(Object.class, new ZebraRenderer());
-        tablaEquipos.getColumnModel().getColumn(4).setCellRenderer(new EstadoRenderer());
-        tablaEquipos.getColumnModel().getColumn(6).setCellRenderer(new AccionesRenderer());
-        tablaEquipos.getColumnModel().getColumn(6).setCellEditor(new AccionesEditor());
-        tablaEquipos.removeColumn(tablaEquipos.getColumnModel().getColumn(7));
+        tablaUsuarios.setDefaultRenderer(Object.class, new ZebraRenderer());
+        tablaUsuarios.getColumnModel().getColumn(0).setCellRenderer(new AvatarRenderer());
+        tablaUsuarios.getColumnModel().getColumn(1).setCellRenderer(new NombreRenderer());
+        tablaUsuarios.getColumnModel().getColumn(3).setCellRenderer(new RolRenderer());
+        tablaUsuarios.getColumnModel().getColumn(4).setCellRenderer(new EstadoRenderer());
+        tablaUsuarios.getColumnModel().getColumn(5).setCellRenderer(new AccionesRenderer());
+        tablaUsuarios.getColumnModel().getColumn(5).setCellEditor(new AccionesEditor());
+        tablaUsuarios.removeColumn(tablaUsuarios.getColumnModel().getColumn(6));
         configurarAnchosTabla();
 
-        JScrollPane scroll = new JScrollPane(tablaEquipos);
-        scroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        JScrollPane scroll = new JScrollPane(tablaUsuarios);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getViewport().setBackground(Color.WHITE);
         scroll.setBackground(Color.WHITE);
         return scroll;
     }
 
     private void configurarAnchosTabla() {
-        TableColumnModel columnas = tablaEquipos.getColumnModel();
-        columnas.getColumn(0).setMinWidth(52);
-        columnas.getColumn(0).setPreferredWidth(58);
-        columnas.getColumn(1).setPreferredWidth(190);
-        columnas.getColumn(2).setPreferredWidth(120);
-        columnas.getColumn(3).setPreferredWidth(160);
-        columnas.getColumn(4).setPreferredWidth(140);
-        columnas.getColumn(5).setPreferredWidth(150);
-        columnas.getColumn(6).setMinWidth(120);
-        columnas.getColumn(6).setPreferredWidth(132);
+        TableColumnModel columnas = tablaUsuarios.getColumnModel();
+        columnas.getColumn(0).setMinWidth(56);
+        columnas.getColumn(0).setPreferredWidth(62);
+        columnas.getColumn(1).setPreferredWidth(240);
+        columnas.getColumn(2).setPreferredWidth(240);
+        columnas.getColumn(3).setPreferredWidth(140);
+        columnas.getColumn(4).setPreferredWidth(120);
+        columnas.getColumn(5).setMinWidth(124);
+        columnas.getColumn(5).setPreferredWidth(138);
     }
 
     private void instalarHoverTabla() {
-        tablaEquipos.addMouseMotionListener(new MouseMotionAdapter() {
+        tablaUsuarios.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                int row = tablaEquipos.rowAtPoint(e.getPoint());
-                Object actual = tablaEquipos.getClientProperty("hoverRow");
+                int row = tablaUsuarios.rowAtPoint(e.getPoint());
+                Object actual = tablaUsuarios.getClientProperty("hoverRow");
                 if (!(actual instanceof Integer) || ((Integer) actual) != row) {
-                    tablaEquipos.putClientProperty("hoverRow", row);
-                    tablaEquipos.repaint();
+                    tablaUsuarios.putClientProperty("hoverRow", row);
+                    tablaUsuarios.repaint();
                 }
             }
         });
 
-        tablaEquipos.addMouseListener(new MouseAdapter() {
+        tablaUsuarios.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseExited(MouseEvent e) {
-                tablaEquipos.putClientProperty("hoverRow", -1);
-                tablaEquipos.repaint();
+                tablaUsuarios.putClientProperty("hoverRow", -1);
+                tablaUsuarios.repaint();
             }
         });
     }
 
-    private void cargarEquipos() {
-        modeloEquipos.setRowCount(0);
+    private void cargarUsuarios() {
+        modeloUsuarios.setRowCount(0);
         try {
-            java.util.List<Equipo> lista = equipoControlador.listarTodos();
-            if (lista == null) {
-                JOptionPane.showMessageDialog(this,
-                        "Error: la consulta devolvió null.\nVerifique la conexión a la base de datos.",
-                        "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            for (Equipo e : lista) {
-                modeloEquipos.addRow(new Object[]{
-                    String.format("%03d", e.getIdEquipo()),
-                    e.getNombre(),
-                    e.getTipoEquipo(),
-                    e.getNumeroSerie(),
-                    estadoToDisplay(e.getEstado()),
-                    e.getUbicacion(),
+            java.util.List<Usuario> lista = usuarioControlador.listarTodos();
+            if (lista == null) return;
+            for (Usuario u : lista) {
+                modeloUsuarios.addRow(new Object[]{
+                    u.getIniciales(),
+                    u.getNombreCompleto(),
+                    u.getCorreo(),
+                    rolToDisplay(u.getRol()),
+                    estadoToDisplay(u.getEstado()),
                     "",
-                    e.getMarca()
+                    u.getIdUsuario()
                 });
             }
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                    "Error al cargar equipos: " + ex.getMessage(),
+                    "Error al cargar usuarios: " + ex.getMessage(),
                     "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void refrescarTabla() {
-        cargarEquipos();
+        cargarUsuarios();
     }
 
     private void aplicarFiltros() {
@@ -363,17 +361,17 @@ public class Equipos extends JInternalFrame {
 
         if (busqueda.length() > 0 && !txtBuscar.isShowingPlaceholder()) {
             String patron = "(?i)" + Pattern.quote(busqueda);
-            filtros.add(RowFilter.regexFilter(patron, 1, 3, 7));
+            filtros.add(RowFilter.regexFilter(patron, 1, 2));
+        }
+
+        String rol = cmbRol == null ? "Todos los roles" : String.valueOf(cmbRol.getSelectedItem());
+        if (!"Todos los roles".equals(rol)) {
+            filtros.add(RowFilter.regexFilter("(?i)^" + Pattern.quote(rol) + "$", 3));
         }
 
         String estado = cmbEstado == null ? "Todos los estados" : String.valueOf(cmbEstado.getSelectedItem());
         if (!"Todos los estados".equals(estado)) {
-            filtros.add(RowFilter.regexFilter("^" + Pattern.quote(estado) + "$", 4));
-        }
-
-        String tipo = cmbTipo == null ? "Todos los tipos" : String.valueOf(cmbTipo.getSelectedItem());
-        if (!"Todos los tipos".equals(tipo)) {
-            filtros.add(RowFilter.regexFilter("^" + Pattern.quote(tipo) + "$", 2));
+            filtros.add(RowFilter.regexFilter("(?i)^" + Pattern.quote(estado) + "$", 4));
         }
 
         if (filtros.isEmpty()) {
@@ -381,108 +379,136 @@ public class Equipos extends JInternalFrame {
             return;
         }
 
-        if (busqueda.length() > 0 && !txtBuscar.isShowingPlaceholder()) {
-            RowFilter<Object, Object> texto = filtros.get(0);
-            List<RowFilter<Object, Object>> finales = new ArrayList<>();
-            finales.add(texto);
-            for (int i = 1; i < filtros.size(); i++) {
-                finales.add(filtros.get(i));
-            }
-            filtroTabla.setRowFilter(RowFilter.andFilter(finales));
-        } else {
-            filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
-        }
+        filtroTabla.setRowFilter(RowFilter.andFilter(filtros));
     }
 
     private String estadoToDisplay(String estado) {
-        if (estado == null) return "Disponible";
+        if (estado == null) return "Activo";
         switch (estado) {
-            case "disponible": return "Disponible";
-            case "prestado": return "En préstamo";
-            case "mantenimiento": return "En mantenimiento";
-            case "dañado": return "Dañado";
+            case "activo": return "Activo";
+            case "inactivo": return "Inactivo";
+            case "bloqueado": return "Bloqueado";
             default: return estado;
         }
     }
 
     private String displayToEstado(String display) {
-        if (display == null) return "disponible";
+        if (display == null) return "activo";
         switch (display) {
-            case "Disponible": return "disponible";
-            case "En préstamo": return "prestado";
-            case "En mantenimiento": return "mantenimiento";
-            case "Dañado": return "dañado";
-            default: return "disponible";
+            case "Activo": return "activo";
+            case "Inactivo": return "inactivo";
+            case "Bloqueado": return "bloqueado";
+            default: return "activo";
+        }
+    }
+
+    private String rolToDisplay(String rol) {
+        if (rol == null) return "Aprendiz";
+        switch (rol) {
+            case "administrador": return "Administrador";
+            case "bibliotecario": return "Bibliotecario";
+            case "almacenista": return "Almacenista";
+            case "aprendiz": return "Aprendiz";
+            case "instructor": return "Instructor";
+            default: return rol;
+        }
+    }
+
+    private String displayToRol(String display) {
+        if (display == null) return "aprendiz";
+        switch (display) {
+            case "Administrador": return "administrador";
+            case "Bibliotecario": return "bibliotecario";
+            case "Almacenista": return "almacenista";
+            case "Aprendiz": return "aprendiz";
+            case "Instructor": return "instructor";
+            default: return "aprendiz";
         }
     }
 
     private void mostrarPopup(Component invoker, int row) {
-        int modelRow = tablaEquipos.convertRowIndexToModel(row);
+        int modelRow = tablaUsuarios.convertRowIndexToModel(row);
         if (modelRow < 0) return;
         JPopupMenu popup = new JPopupMenu();
-        JMenuItem editar = new JMenuItem("Editar");
-        editar.addActionListener(evt -> {
-            mostrarDialogoEditar(modelRow);
-        });
-        JMenuItem eliminar = new JMenuItem("Eliminar");
-        eliminar.addActionListener(evt -> {
-            eliminarEquipo(modelRow);
-        });
-        popup.add(editar);
-        popup.add(eliminar);
+        popup.setBorder(BorderFactory.createLineBorder(BORDER));
+        popup.add(crearItemMenuAccion("Ver", modelRow));
+        popup.add(crearItemMenuAccion("Editar", modelRow));
+        popup.add(crearItemMenuAccion("Eliminar", modelRow));
         popup.show(invoker, 0, invoker.getHeight());
+    }
+
+    private JMenuItem crearItemMenuAccion(String texto, int modelRow) {
+        JMenuItem item = new JMenuItem(texto);
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground("Eliminar".equals(texto) ? RED : TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.addActionListener(evt -> {
+            if ("Ver".equals(texto)) mostrarDialogoVer(modelRow);
+            else if ("Editar".equals(texto)) mostrarDialogoEditar(modelRow);
+            else if ("Eliminar".equals(texto)) eliminarUsuario(modelRow);
+        });
+        return item;
+    }
+
+    private int getIdFromModelRow(int modelRow) {
+        // ID is stored in column 6 (hidden), but the column is removed from view.
+        // We store it as a client property keyed by row, or read from model directly
+        // Since the column is removed from the table view but still in the model:
+        try {
+            Object val = modeloUsuarios.getValueAt(modelRow, 6);
+            return Integer.parseInt(val.toString());
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     private void mostrarDialogoVer(int modelRow) {
         try {
-            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
-            if (idObj == null) return;
-            int id = Integer.parseInt(idObj.toString());
-            Equipo e = equipoControlador.buscarPorId(id);
-            if (e != null) mostrarDialogoEquipo(e, false);
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            Usuario u = usuarioControlador.buscarPorId(id);
+            if (u != null) mostrarDialogoUsuario(u, false);
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                    "Error al cargar detalles del equipo: " + ex.getMessage(),
+                    "Error al cargar detalles del usuario: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void mostrarDialogoEditar(int modelRow) {
         try {
-            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
-            if (idObj == null) return;
-            int id = Integer.parseInt(idObj.toString());
-            Equipo e = equipoControlador.buscarPorId(id);
-            if (e != null) mostrarDialogoEquipo(e, true);
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            Usuario u = usuarioControlador.buscarPorId(id);
+            if (u != null) mostrarDialogoUsuario(u, true);
         } catch (Exception ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                    "Error al cargar datos del equipo: " + ex.getMessage(),
+                    "Error al cargar datos del usuario: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void eliminarEquipo(int modelRow) {
+    private void eliminarUsuario(int modelRow) {
         try {
-            Object idObj = modeloEquipos.getValueAt(modelRow, 0);
-            if (idObj == null) return;
-            int id = Integer.parseInt(idObj.toString());
-            String nombre = String.valueOf(modeloEquipos.getValueAt(modelRow, 1));
+            int id = getIdFromModelRow(modelRow);
+            if (id < 0) return;
+            String nombre = String.valueOf(modeloUsuarios.getValueAt(modelRow, 1));
 
             int confirm = JOptionPane.showConfirmDialog(
                     this,
-                    "¿Está seguro de eliminar el equipo \"" + nombre + "\"?",
+                    "¿Está seguro de eliminar el usuario \"" + nombre + "\"?",
                     "Confirmar eliminación",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                if (equipoControlador.eliminar(id)) {
+                if (usuarioControlador.eliminar(id)) {
                     refrescarTabla();
                 } else {
                     JOptionPane.showMessageDialog(this,
-                            "Error al eliminar el equipo.",
+                            "Error al eliminar el usuario.",
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -494,9 +520,9 @@ public class Equipos extends JInternalFrame {
         }
     }
 
-    private void mostrarDialogoEquipo(Equipo equipo, boolean editable) {
+    private void mostrarDialogoUsuario(Usuario usuario, boolean editable) {
         java.awt.Window padre = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(padre, editable ? "Registrar / Editar Equipo" : "Detalles del Equipo",
+        JDialog dialog = new JDialog(padre, editable ? "Registrar / Editar Usuario" : "Detalles del Usuario",
                 java.awt.Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -512,49 +538,33 @@ public class Equipos extends JInternalFrame {
         Font labelFont = new Font("SansSerif", Font.BOLD, 12);
         Color labelColor = TEXT_SOFT;
 
-        JTextField txtNombre = new JTextField(equipo.getNombre());
-        txtNombre.setPreferredSize(new Dimension(380, 36));
+        JTextField txtNombres = new JTextField(usuario.getNombres());
+        txtNombres.setPreferredSize(new Dimension(380, 36));
 
-        JComboBox<String> cmbTipoEquipo = new JComboBox<>(new String[]{"Monitor", "Proyector", "Teclado", "Tablet", "Otros"});
-        if (equipo.getTipoEquipo() != null) cmbTipoEquipo.setSelectedItem(equipo.getTipoEquipo());
-        cmbTipoEquipo.setPreferredSize(new Dimension(380, 36));
+        JTextField txtApellidos = new JTextField(usuario.getApellidos());
+        txtApellidos.setPreferredSize(new Dimension(380, 36));
 
-        JTextField txtMarca = new JTextField(equipo.getMarca());
-        txtMarca.setPreferredSize(new Dimension(380, 36));
+        JTextField txtCorreo = new JTextField(usuario.getCorreo());
+        txtCorreo.setPreferredSize(new Dimension(380, 36));
 
-        JTextField txtSerie = new JTextField(equipo.getNumeroSerie());
-        txtSerie.setPreferredSize(new Dimension(380, 36));
+        JComboBox<String> cmbRolUsuario = new JComboBox<>(new String[]{"Administrador", "Bibliotecario", "Almacenista", "Aprendiz", "Instructor"});
+        cmbRolUsuario.setSelectedItem(rolToDisplay(usuario.getRol()));
+        cmbRolUsuario.setPreferredSize(new Dimension(380, 36));
 
-        JComboBox<String> cmbEstadoEquipo = new JComboBox<>(new String[]{"Disponible", "En préstamo", "En mantenimiento", "Dañado"});
-        cmbEstadoEquipo.setSelectedItem(estadoToDisplay(equipo.getEstado()));
-        cmbEstadoEquipo.setPreferredSize(new Dimension(380, 36));
+        JComboBox<String> cmbEstadoUsuario = new JComboBox<>(new String[]{"Activo", "Inactivo", "Bloqueado"});
+        cmbEstadoUsuario.setSelectedItem(estadoToDisplay(usuario.getEstado()));
+        cmbEstadoUsuario.setPreferredSize(new Dimension(380, 36));
 
-        JTextField txtUbicacion = new JTextField(equipo.getUbicacion());
-        txtUbicacion.setPreferredSize(new Dimension(380, 36));
-
-        JCheckBox chkPrestamo = new JCheckBox("Disponible para préstamo", equipo.isDisponiblePrestamo());
-        chkPrestamo.setFont(new Font("SansSerif", Font.PLAIN, 13));
-
-        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(equipo.getTiempoMaxPrestamo(), 0, 365, 1);
-        JSpinner spnTiempo = new JSpinner(spinnerModel);
-        spnTiempo.setPreferredSize(new Dimension(120, 36));
-
-        JTextArea txtDescripcion = new JTextArea(equipo.getDescripcion(), 3, 30);
-        txtDescripcion.setLineWrap(true);
-        txtDescripcion.setWrapStyleWord(true);
-        JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
-        scrollDesc.setPreferredSize(new Dimension(380, 60));
+        JPasswordField txtPassword = new JPasswordField();
+        txtPassword.setPreferredSize(new Dimension(380, 36));
 
         java.awt.Component[][] campos = {
-            {crearLabel("Nombre", labelFont, labelColor), txtNombre},
-            {crearLabel("Tipo", labelFont, labelColor), cmbTipoEquipo},
-            {crearLabel("Marca", labelFont, labelColor), txtMarca},
-            {crearLabel("Número de Serie", labelFont, labelColor), txtSerie},
-            {crearLabel("Estado", labelFont, labelColor), cmbEstadoEquipo},
-            {crearLabel("Ubicación", labelFont, labelColor), txtUbicacion},
-            {crearLabel("", labelFont, labelColor), chkPrestamo},
-            {crearLabel("Tiempo máx. préstamo (días)", labelFont, labelColor), spnTiempo},
-            {crearLabel("Descripción", labelFont, labelColor), scrollDesc}
+            {crearLabel("Nombres", labelFont, labelColor), txtNombres},
+            {crearLabel("Apellidos", labelFont, labelColor), txtApellidos},
+            {crearLabel("Correo", labelFont, labelColor), txtCorreo},
+            {crearLabel("Rol", labelFont, labelColor), cmbRolUsuario},
+            {crearLabel("Estado", labelFont, labelColor), cmbEstadoUsuario},
+            {crearLabel(usuario.getIdUsuario() > 0 ? "Contraseña (dejar vacío para no cambiar)" : "Contraseña", labelFont, labelColor), txtPassword}
         };
 
         gbc.gridy = 0;
@@ -567,35 +577,38 @@ public class Equipos extends JInternalFrame {
         }
 
         if (!editable) {
-            txtNombre.setEditable(false);
-            cmbTipoEquipo.setEnabled(false);
-            txtMarca.setEditable(false);
-            txtSerie.setEditable(false);
-            cmbEstadoEquipo.setEnabled(false);
-            txtUbicacion.setEditable(false);
-            chkPrestamo.setEnabled(false);
-            spnTiempo.setEnabled(false);
-            txtDescripcion.setEditable(false);
+            txtNombres.setEditable(false);
+            txtApellidos.setEditable(false);
+            txtCorreo.setEditable(false);
+            cmbRolUsuario.setEnabled(false);
+            cmbEstadoUsuario.setEnabled(false);
+            txtPassword.setVisible(false);
         }
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         botones.setOpaque(false);
 
         if (editable) {
-            JButton btnGuardar = crearBotonPrincipal(equipo.getIdEquipo() > 0 ? "Actualizar" : "Guardar", null);
+            JButton btnGuardar = crearBotonPrincipal(usuario.getIdUsuario() > 0 ? "Actualizar" : "Guardar", null);
             btnGuardar.addActionListener(evt -> {
                 try {
-                    equipo.setNombre(txtNombre.getText().trim());
-                    equipo.setTipoEquipo(String.valueOf(cmbTipoEquipo.getSelectedItem()));
-                    equipo.setMarca(txtMarca.getText().trim());
-                    equipo.setNumeroSerie(txtSerie.getText().trim());
-                    equipo.setEstado(displayToEstado(String.valueOf(cmbEstadoEquipo.getSelectedItem())));
-                    equipo.setUbicacion(txtUbicacion.getText().trim());
-                    equipo.setDisponiblePrestamo(chkPrestamo.isSelected());
-                    equipo.setTiempoMaxPrestamo((Integer) spnTiempo.getValue());
-                    equipo.setDescripcion(txtDescripcion.getText().trim());
+                    usuario.setNombres(txtNombres.getText().trim());
+                    usuario.setApellidos(txtApellidos.getText().trim());
+                    usuario.setCorreo(txtCorreo.getText().trim());
+                    usuario.setRol(displayToRol(String.valueOf(cmbRolUsuario.getSelectedItem())));
+                    usuario.setEstado(displayToEstado(String.valueOf(cmbEstadoUsuario.getSelectedItem())));
+                    String pass = new String(txtPassword.getPassword());
+                    if (!pass.isEmpty()) {
+                        usuario.setPassword(pass);
+                    }
 
-                    int id = equipoControlador.guardar(equipo);
+                    if (usuario.getIdUsuario() <= 0 && pass.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog,
+                                "La contraseña es obligatoria para nuevos usuarios.",
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    int id = usuarioControlador.guardar(usuario);
                     boolean exito = id > 0;
 
                     if (exito) {
@@ -603,7 +616,7 @@ public class Equipos extends JInternalFrame {
                         dialog.dispose();
                     } else {
                         JOptionPane.showMessageDialog(dialog,
-                                "Error al guardar el equipo.",
+                                "Error al guardar el usuario.",
                                 "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (Exception ex) {
@@ -650,7 +663,7 @@ public class Equipos extends JInternalFrame {
     private JComboBox<String> crearCombo(String[] opciones) {
         JComboBox<String> combo = new JComboBox<>();
         combo.setModel(new DefaultComboBoxModel<>(opciones));
-        combo.setPreferredSize(new Dimension(180, 42));
+        combo.setPreferredSize(new Dimension(190, 42));
         combo.setFont(new Font("SansSerif", Font.PLAIN, 13));
         combo.setForeground(TEXT_DARK);
         combo.setBackground(Color.WHITE);
@@ -693,10 +706,30 @@ public class Equipos extends JInternalFrame {
         return boton;
     }
 
+    private void mostrarMensajeAccion(String accion) {
+        JOptionPane.showMessageDialog(
+                this,
+                accion + " todavía no está conectado al flujo real de datos.",
+                "Módulo de usuarios",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
     @SuppressWarnings("unchecked")
     private void initComponents() {
         setBorder(BorderFactory.createEmptyBorder());
-        setPreferredSize(new Dimension(1060, 680));
+        setPreferredSize(new Dimension(1120, 720));
+    }
+
+    private static Color resolverFondoFila(JTable table, int row, boolean isSelected) {
+        if (isSelected) {
+            return table.getSelectionBackground();
+        }
+        Object hover = table.getClientProperty("hoverRow");
+        if (hover instanceof Integer && ((Integer) hover) == row) {
+            return TABLE_HOVER;
+        }
+        return row % 2 == 0 ? Color.WHITE : TABLE_ALT;
     }
 
     private static final class ZebraRenderer extends DefaultTableCellRenderer {
@@ -715,11 +748,97 @@ public class Equipos extends JInternalFrame {
                 int column) {
 
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            c.setFont(new Font("SansSerif", column == 1 ? Font.BOLD : Font.PLAIN, 13));
+            c.setFont(new Font("SansSerif", Font.PLAIN, 13));
             setForeground(TEXT_DARK);
             setHorizontalAlignment(column == 0 ? SwingConstants.CENTER : SwingConstants.LEFT);
             setBackground(resolverFondoFila(table, row, isSelected));
             return c;
+        }
+    }
+
+    private static final class AvatarRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 13));
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.add(new AvatarBadge(String.valueOf(value)));
+            return panel;
+        }
+    }
+
+    private static final class NombreRenderer implements TableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            int modelRow = table.convertRowIndexToModel(row);
+            String id = String.valueOf(table.getModel().getValueAt(modelRow, 0));
+
+            JPanel panel = new JPanel();
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+            panel.setBorder(new EmptyBorder(12, 12, 10, 12));
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+            JLabel nombre = new JLabel(String.valueOf(value));
+            nombre.setFont(new Font("SansSerif", Font.BOLD, 14));
+            nombre.setForeground(TEXT_DARK);
+
+            JLabel idLabel = new JLabel("ID: " + id);
+            idLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            idLabel.setForeground(TEXT_SOFT);
+
+            panel.add(nombre);
+            panel.add(Box.createVerticalStrut(5));
+            panel.add(idLabel);
+            return panel;
+        }
+    }
+
+    private static final class RolRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table,
+                Object value,
+                boolean isSelected,
+                boolean hasFocus,
+                int row,
+                int column) {
+
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 13));
+            panel.setOpaque(true);
+            panel.setBackground(resolverFondoFila(table, row, isSelected));
+
+            String rol = String.valueOf(value);
+            Color fondo = new Color(224, 231, 255);
+            Color texto = BLUE;
+
+            if ("Administrador".equalsIgnoreCase(rol)) {
+                fondo = new Color(253, 226, 226);
+                texto = RED;
+            } else if ("Aprendiz".equalsIgnoreCase(rol)) {
+                fondo = new Color(232, 240, 255);
+                texto = BLUE;
+            }
+
+            panel.add(new BadgeLabel(rol.toUpperCase(), fondo, texto));
+            return panel;
         }
     }
 
@@ -742,16 +861,12 @@ public class Equipos extends JInternalFrame {
             Color fondo = new Color(220, 252, 231);
             Color texto = new Color(21, 128, 61);
 
-            if ("En préstamo".equalsIgnoreCase(estado) || "Solicitado".equalsIgnoreCase(estado)) {
-                fondo = new Color(254, 243, 199);
-                texto = new Color(146, 64, 14);
-            } else if ("No disponible".equalsIgnoreCase(estado) || "En mantenimiento".equalsIgnoreCase(estado)) {
+            if ("Inactivo".equalsIgnoreCase(estado)) {
                 fondo = new Color(254, 226, 226);
                 texto = new Color(185, 28, 28);
             }
 
-            BadgeLabel badge = new BadgeLabel(estado, fondo, texto);
-            panel.add(badge);
+            panel.add(new BadgeLabel(estado.toUpperCase(), fondo, texto));
             return panel;
         }
     }
@@ -766,20 +881,8 @@ public class Equipos extends JInternalFrame {
                 boolean hasFocus,
                 int row,
                 int column) {
-            JPanel panel = crearPanelAcciones(resolverFondoFila(table, row, isSelected));
-            return panel;
+            return crearPanelAcciones(resolverFondoFila(table, row, isSelected));
         }
-    }
-
-    private static Color resolverFondoFila(JTable table, int row, boolean isSelected) {
-        if (isSelected) {
-            return table.getSelectionBackground();
-        }
-        Object hover = table.getClientProperty("hoverRow");
-        if (hover instanceof Integer && ((Integer) hover) == row) {
-            return TABLE_HOVER;
-        }
-        return row % 2 == 0 ? Color.WHITE : TABLE_ALT;
     }
 
     private class AccionesEditor extends AbstractCellEditor implements TableCellEditor {
@@ -799,49 +902,59 @@ public class Equipos extends JInternalFrame {
                 int row,
                 int column) {
             editingRow = row;
-            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 9));
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
             panel.setOpaque(true);
             panel.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
 
-            JButton ver = crearBotonAccion("Ver", new EyeIcon(15, SENA_GREEN_DARK));
-            ver.addActionListener(evt -> {
-                mostrarDialogoVer(editingRow);
+            JButton editar = crearBotonIconoContorno(new EditIcon(15, SENA_GREEN_DARK), SENA_GREEN, Color.WHITE, new Dimension(58, 42));
+            editar.addActionListener(evt -> {
+                mostrarDialogoEditar(editingRow);
                 fireEditingStopped();
             });
 
-            JButton mas = crearBotonIcono(new DotsIcon(15, TEXT_SOFT));
+            JButton mas = crearBotonIconoContorno(new DotsIcon(15, TEXT_SOFT), BORDER, Color.WHITE, new Dimension(42, 42));
             mas.addActionListener(evt -> {
                 mostrarPopup(mas, editingRow);
                 fireEditingStopped();
             });
 
-            panel.add(ver);
+            panel.add(editar);
             panel.add(mas);
             return panel;
         }
     }
 
     private static JPanel crearPanelAcciones(Color fondo) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 9));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 14));
         panel.setOpaque(true);
         panel.setBackground(fondo);
 
-        JButton ver = crearBotonAccion("Ver", new EyeIcon(15, SENA_GREEN_DARK));
-        JButton mas = crearBotonIcono(new DotsIcon(15, TEXT_SOFT));
+        JButton ver = crearBotonIconoContorno(new EditIcon(15, SENA_GREEN_DARK), SENA_GREEN, Color.WHITE, new Dimension(58, 42));
+        ver.addActionListener(evt -> JOptionPane.showMessageDialog(
+                null,
+                "Edición de usuario todavía no está conectada a datos reales.",
+                "Acción de usuario",
+                JOptionPane.INFORMATION_MESSAGE
+        ));
+
+        JButton mas = crearBotonIconoContorno(new DotsIcon(15, TEXT_SOFT), BORDER, Color.WHITE, new Dimension(42, 42));
+        JPopupMenu menu = crearMenuAcciones();
+        mas.addActionListener(evt -> menu.show(mas, 0, mas.getHeight()));
 
         panel.add(ver);
         panel.add(mas);
         return panel;
     }
 
-    private static JButton crearBotonAccion(String texto, Icon icono) {
-        JButton boton = new JButton(texto, icono);
-        boton.setFont(new Font("SansSerif", Font.BOLD, 12));
-        boton.setForeground(SENA_GREEN_DARK);
-        boton.setBackground(SENA_GREEN_SOFT);
+    private static JButton crearBotonIconoContorno(Icon icono, Color borde, Color fondo, Dimension dimension) {
+        JButton boton = new JButton(icono);
+        boton.setPreferredSize(dimension);
+        boton.setBackground(fondo);
+        boton.setOpaque(true);
+        boton.setContentAreaFilled(true);
         boton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(188, 232, 201)),
-                new EmptyBorder(7, 10, 7, 10)
+                BorderFactory.createLineBorder(borde),
+                new EmptyBorder(8, 8, 8, 8)
         ));
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -849,24 +962,34 @@ public class Equipos extends JInternalFrame {
         return boton;
     }
 
-    private static JButton crearBotonIcono(Icon icono) {
-        JButton boton = new JButton(icono);
-        boton.setPreferredSize(new Dimension(34, 32));
-        boton.setBackground(Color.WHITE);
-        boton.setBorder(BorderFactory.createLineBorder(BORDER));
-        boton.setFocusPainted(false);
-        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        boton.setUI(new BasicButtonUI());
-        return boton;
+    private static JPopupMenu crearMenuAcciones() {
+        JPopupMenu menu = new JPopupMenu();
+        menu.setBorder(BorderFactory.createLineBorder(BORDER));
+        menu.add(crearItemMenu("Ver"));
+        menu.add(crearItemMenu("Editar"));
+        menu.add(crearItemMenu("Eliminar"));
+        return menu;
+    }
+
+    private static JMenuItem crearItemMenu(String texto) {
+        JMenuItem item = new JMenuItem(texto);
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground("Eliminar".equals(texto) ? RED : TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.addActionListener(evt -> JOptionPane.showMessageDialog(
+                null,
+                texto + " de usuario todavía no está conectado a datos reales.",
+                "Acción de usuario",
+                JOptionPane.INFORMATION_MESSAGE
+        ));
+        return item;
     }
 
     private static final class PlaceholderTextField extends JTextField {
 
-        private final String placeholder;
         private boolean showingPlaceholder = true;
 
         private PlaceholderTextField(String placeholder) {
-            this.placeholder = placeholder;
             setText(placeholder);
             setForeground(TEXT_SOFT);
             addFocusListener(new FocusAdapter() {
@@ -895,7 +1018,7 @@ public class Equipos extends JInternalFrame {
         }
     }
 
-    private static final class BadgeLabel extends JLabel {
+    private static class BadgeLabel extends JLabel {
 
         private final Color fill;
 
@@ -915,6 +1038,30 @@ public class Equipos extends JInternalFrame {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(fill);
                 g2.fillRoundRect(0, 1, getWidth(), getHeight() - 2, 18, 18);
+            } finally {
+                g2.dispose();
+            }
+            super.paintComponent(g);
+        }
+    }
+
+    private static final class AvatarBadge extends JLabel {
+
+        private AvatarBadge(String text) {
+            super(text, SwingConstants.CENTER);
+            setOpaque(false);
+            setForeground(SENA_GREEN);
+            setFont(new Font("SansSerif", Font.BOLD, 12));
+            setBorder(new EmptyBorder(7, 12, 7, 12));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(240, 252, 244));
+                g2.fillOval(0, 0, getWidth(), getHeight());
             } finally {
                 g2.dispose();
             }
@@ -943,15 +1090,18 @@ public class Equipos extends JInternalFrame {
                 int w = getWidth();
                 int h = getHeight();
 
-                g2.setComposite(AlphaComposite.SrcOver.derive(0.08f));
+                g2.setComposite(AlphaComposite.SrcOver.derive(0.10f));
                 g2.setColor(Color.BLACK);
                 g2.fillRoundRect(4, 6, Math.max(0, w - 8), Math.max(0, h - 8), arc, arc);
 
                 g2.setComposite(AlphaComposite.SrcOver);
                 g2.setColor(fill);
                 g2.fillRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
-                g2.setColor(borderColor);
-                g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+
+                if (borderColor != null) {
+                    g2.setColor(borderColor);
+                    g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+                }
             } finally {
                 g2.dispose();
             }
@@ -964,7 +1114,7 @@ public class Equipos extends JInternalFrame {
         private final ImageIcon fondo;
 
         private FondoInternoPanel() {
-            URL url = Equipos.class.getResource("/imagenes/fondo.jpg");
+            URL url = Usuarios.class.getResource("/imagenes/fondo.jpg");
             fondo = url != null ? new ImageIcon(url) : null;
             setOpaque(true);
         }
@@ -1006,19 +1156,19 @@ public class Equipos extends JInternalFrame {
         }
     }
 
-    private static final class PlusIcon implements Icon {
+    private static final class UserPlusIcon implements Icon {
 
         private final int size;
         private final Color color;
 
-        private PlusIcon(int size, Color color) {
+        private UserPlusIcon(int size, Color color) {
             this.size = size;
             this.color = color;
         }
 
         @Override
         public int getIconWidth() {
-            return size;
+            return size + 2;
         }
 
         @Override
@@ -1032,8 +1182,49 @@ public class Equipos extends JInternalFrame {
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(color);
-                g2.fillRoundRect(x + size / 2 - 1, y, 3, size, 3, 3);
-                g2.fillRoundRect(x, y + size / 2 - 1, size, 3, 3, 3);
+                g2.drawOval(x, y + 1, 5, 5);
+                g2.drawArc(x - 1, y + 7, 8, 8, 0, 180);
+                g2.fillRoundRect(x + size - 2, y + 4, 3, size - 2, 2, 2);
+                g2.fillRoundRect(x + size - 5, y + size / 2 + 1, 9, 3, 2, 2);
+            } finally {
+                g2.dispose();
+            }
+        }
+    }
+
+    private static final class EditIcon implements Icon {
+
+        private final int size;
+        private final Color color;
+
+        private EditIcon(int size, Color color) {
+            this.size = size;
+            this.color = color;
+        }
+
+        @Override
+        public int getIconWidth() {
+            return size + 2;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return size + 2;
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.drawLine(x + 2, y + size, x + size - 2, y + 2);
+                g2.fillPolygon(
+                        new int[]{x + size - 1, x + size + 2, x + size - 2},
+                        new int[]{y + 1, y + 4, y + 6},
+                        3
+                );
+                g2.fillRect(x + 1, y + size - 2, 4, 2);
             } finally {
                 g2.dispose();
             }
@@ -1068,41 +1259,6 @@ public class Equipos extends JInternalFrame {
                 g2.setColor(color);
                 g2.drawOval(x, y, size - 5, size - 5);
                 g2.drawLine(x + size - 5, y + size - 5, x + size + 1, y + size + 1);
-            } finally {
-                g2.dispose();
-            }
-        }
-    }
-
-    private static final class EyeIcon implements Icon {
-
-        private final int size;
-        private final Color color;
-
-        private EyeIcon(int size, Color color) {
-            this.size = size;
-            this.color = color;
-        }
-
-        @Override
-        public int getIconWidth() {
-            return size + 2;
-        }
-
-        @Override
-        public int getIconHeight() {
-            return size;
-        }
-
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.drawArc(x, y + 2, size, size - 5, 0, 180);
-                g2.drawArc(x, y - 1, size, size - 5, 180, 180);
-                g2.fillOval(x + size / 2 - 2, y + size / 2 - 2, 4, 4);
             } finally {
                 g2.dispose();
             }
