@@ -21,50 +21,12 @@ public class ModeloSancion {
         String sql = SQL_BASE + "ORDER BY m.id_multa";
 
         try (Connection con = ConexionDB.conectar();
-             PreparedStatement psSchema = con.prepareStatement(
-                     "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'multas'");
-             ResultSet rsSchema = psSchema.executeQuery();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) AS total FROM multas");
-             ResultSet rsCount = ps.executeQuery()) {
-            while (rsSchema.next()) {
-                System.out.println("[ModeloSancion] Tabla encontrada: "
-                        + rsSchema.getString("table_schema") + "." + rsSchema.getString("table_name"));
-            }
-            int total = 0;
-            if (rsCount.next()) {
-                total = rsCount.getInt("total");
-            }
-            System.out.println("[ModeloSancion] COUNT sanciones = " + total);
-
-            try (PreparedStatement psEstado = con.prepareStatement(
-                    "SELECT estado, COUNT(*) AS total FROM multas GROUP BY estado ORDER BY estado");
-                 ResultSet rsEstado = psEstado.executeQuery()) {
-                System.out.println("[ModeloSancion] Conteo por estado:");
-                while (rsEstado.next()) {
-                    System.out.println("  estado=" + rsEstado.getString("estado")
-                            + " total=" + rsEstado.getInt("total"));
-                }
-            }
-        } catch (SQLException ex) {
-            System.out.println("[ModeloSancion] COUNT/schema fallo: " + ex.getMessage());
-            ex.printStackTrace();
-        }
-
-        try (Connection con = ConexionDB.conectar();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
-            System.out.println("[ModeloSancion] SQL listarTodas = " + sql);
-            System.out.println("[ModeloSancion] Columnas devueltas:");
-            for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-                System.out.println("  - " + rs.getMetaData().getColumnLabel(i));
-            }
             while (rs.next()) {
-                Sancion sancion = mapearSancion(rs);
-                System.out.println("[ModeloSancion] Sancion encontrada: " + sancion.getIdSancion());
-                lista.add(sancion);
+                lista.add(mapearSancion(rs));
             }
-            System.out.println("[ModeloSancion] Cantidad: " + lista.size());
         } catch (SQLException ex) {
             System.out.println("[ModeloSancion] listarTodas fallo: " + ex.getMessage());
             ex.printStackTrace();

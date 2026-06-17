@@ -34,6 +34,7 @@ import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import Modelo.Equipo;
 import Controlador.EquipoControlador;
 import javax.swing.BorderFactory;
@@ -321,32 +322,42 @@ public class Equipos extends JInternalFrame {
 
     private void cargarEquipos() {
         modeloEquipos.setRowCount(0);
-        try {
-            java.util.List<Equipo> lista = equipoControlador.listarTodos();
-            if (lista == null) {
-                JOptionPane.showMessageDialog(this,
-                        "Error: la consulta devolvió null.\nVerifique la conexión a la base de datos.",
-                        "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-                return;
+        new SwingWorker<List<Equipo>, Void>() {
+            @Override
+            protected List<Equipo> doInBackground() throws Exception {
+                return equipoControlador.listarTodos();
             }
-            for (Equipo e : lista) {
-                modeloEquipos.addRow(new Object[]{
-                    String.format("%03d", e.getIdEquipo()),
-                    e.getNombre(),
-                    e.getTipoEquipo(),
-                    e.getNumeroSerie(),
-                    estadoToDisplay(e.getEstado()),
-                    e.getUbicacion(),
-                    "",
-                    e.getMarca()
-                });
+
+            @Override
+            protected void done() {
+                try {
+                    List<Equipo> lista = get();
+                    if (lista == null) {
+                        JOptionPane.showMessageDialog(Equipos.this,
+                                "Error: la consulta devolvió null.\nVerifique la conexión a la base de datos.",
+                                "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    for (Equipo e : lista) {
+                        modeloEquipos.addRow(new Object[]{
+                            String.format("%03d", e.getIdEquipo()),
+                            e.getNombre(),
+                            e.getTipoEquipo(),
+                            e.getNumeroSerie(),
+                            estadoToDisplay(e.getEstado()),
+                            e.getUbicacion(),
+                            "",
+                            e.getMarca()
+                        });
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(Equipos.this,
+                            "Error al cargar equipos: " + ex.getMessage(),
+                            "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                }
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Error al cargar equipos: " + ex.getMessage(),
-                    "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-        }
+        }.execute();
     }
 
     private void refrescarTabla() {
@@ -961,11 +972,14 @@ public class Equipos extends JInternalFrame {
 
     private static final class FondoInternoPanel extends JPanel {
 
-        private final ImageIcon fondo;
+        private static final ImageIcon FONDO;
+
+        static {
+            URL url = Equipos.class.getResource("/imagenes/fondo.jpg");
+            FONDO = url != null ? new ImageIcon(url) : null;
+        }
 
         private FondoInternoPanel() {
-            URL url = Equipos.class.getResource("/imagenes/fondo.jpg");
-            fondo = url != null ? new ImageIcon(url) : null;
             setOpaque(true);
         }
 
@@ -980,18 +994,18 @@ public class Equipos extends JInternalFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (fondo != null && fondo.getImage() != null) {
+                if (FONDO != null && FONDO.getImage() != null) {
                     int w = getWidth();
                     int h = getHeight();
-                    int iw = fondo.getIconWidth();
-                    int ih = fondo.getIconHeight();
+                    int iw = FONDO.getIconWidth();
+                    int ih = FONDO.getIconHeight();
 
                     double scale = Math.max((double) w / iw, (double) h / ih);
                     int drawW = (int) Math.round(iw * scale);
                     int drawH = (int) Math.round(ih * scale);
                     int x = (w - drawW) / 2;
                     int y = (h - drawH) / 2;
-                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
+                    g2.drawImage(FONDO.getImage(), x, y, drawW, drawH, this);
                 } else {
                     g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
                     g2.fillRect(0, 0, getWidth(), getHeight());

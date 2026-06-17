@@ -38,6 +38,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingWorker;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -325,26 +326,36 @@ public class Usuarios extends JInternalFrame {
 
     private void cargarUsuarios() {
         modeloUsuarios.setRowCount(0);
-        try {
-            java.util.List<Usuario> lista = usuarioControlador.listarTodos();
-            if (lista == null) return;
-            for (Usuario u : lista) {
-                modeloUsuarios.addRow(new Object[]{
-                    u.getIniciales(),
-                    u.getNombreCompleto(),
-                    u.getCorreo(),
-                    rolToDisplay(u.getRol()),
-                    estadoToDisplay(u.getEstado()),
-                    "",
-                    u.getIdUsuario()
-                });
+        new SwingWorker<List<Usuario>, Void>() {
+            @Override
+            protected List<Usuario> doInBackground() throws Exception {
+                return usuarioControlador.listarTodos();
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Error al cargar usuarios: " + ex.getMessage(),
-                    "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
-        }
+
+            @Override
+            protected void done() {
+                try {
+                    List<Usuario> lista = get();
+                    if (lista == null) return;
+                    for (Usuario u : lista) {
+                        modeloUsuarios.addRow(new Object[]{
+                            u.getIniciales(),
+                            u.getNombreCompleto(),
+                            u.getCorreo(),
+                            rolToDisplay(u.getRol()),
+                            estadoToDisplay(u.getEstado()),
+                            "",
+                            u.getIdUsuario()
+                        });
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(Usuarios.this,
+                            "Error al cargar usuarios: " + ex.getMessage(),
+                            "Error de Base de Datos", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
     }
 
     private void refrescarTabla() {
@@ -1111,11 +1122,14 @@ public class Usuarios extends JInternalFrame {
 
     private static final class FondoInternoPanel extends JPanel {
 
-        private final ImageIcon fondo;
+        private static final ImageIcon FONDO;
+
+        static {
+            URL url = Usuarios.class.getResource("/imagenes/fondo.jpg");
+            FONDO = url != null ? new ImageIcon(url) : null;
+        }
 
         private FondoInternoPanel() {
-            URL url = Usuarios.class.getResource("/imagenes/fondo.jpg");
-            fondo = url != null ? new ImageIcon(url) : null;
             setOpaque(true);
         }
 
@@ -1130,18 +1144,18 @@ public class Usuarios extends JInternalFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (fondo != null && fondo.getImage() != null) {
+                if (FONDO != null && FONDO.getImage() != null) {
                     int w = getWidth();
                     int h = getHeight();
-                    int iw = fondo.getIconWidth();
-                    int ih = fondo.getIconHeight();
+                    int iw = FONDO.getIconWidth();
+                    int ih = FONDO.getIconHeight();
 
                     double scale = Math.max((double) w / iw, (double) h / ih);
                     int drawW = (int) Math.round(iw * scale);
                     int drawH = (int) Math.round(ih * scale);
                     int x = (w - drawW) / 2;
                     int y = (h - drawH) / 2;
-                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
+                    g2.drawImage(FONDO.getImage(), x, y, drawW, drawH, this);
                 } else {
                     g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
                     g2.fillRect(0, 0, getWidth(), getHeight());

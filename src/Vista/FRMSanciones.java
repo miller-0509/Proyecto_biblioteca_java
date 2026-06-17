@@ -30,7 +30,9 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.SwingWorker;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JInternalFrame;
@@ -246,28 +248,35 @@ public class FRMSanciones extends JInternalFrame {
     }
 
     private void cargarTabla() {
-        try {
-            List<Sancion> lista = controlador.listarTodas();
-            System.out.println("[FRMSanciones] Registros encontrados: " + lista.size());
-            modeloSanciones.setRowCount(0);
-            for (Sancion s : lista) {
-                modeloSanciones.addRow(new Object[]{
-                    s.getIdSancion(),
-                    s.getFechaSancion(),
-                    mostrarUsuario(s),
-                    mostrarRecurso(s),
-                    s.getDiasRetraso(),
-                    s.getDiasSuspension(),
-                    mostrarEstado(s),
-                    "Acciones"
-                });
+        new SwingWorker<List<Sancion>, Void>() {
+            @Override
+            protected List<Sancion> doInBackground() throws Exception {
+                return controlador.listarTodas();
             }
-            System.out.println("[FRMSanciones] Filas JTable: " + modeloSanciones.getRowCount());
-        } catch (Exception ex) {
-            System.out.println("[FRMSanciones] Error cargando tabla: " + ex.getMessage());
-            ex.printStackTrace();
-            modeloSanciones.setRowCount(0);
-        }
+
+            @Override
+            protected void done() {
+                try {
+                    List<Sancion> lista = get();
+                    modeloSanciones.setRowCount(0);
+                    for (Sancion s : lista) {
+                        modeloSanciones.addRow(new Object[]{
+                            s.getIdSancion(),
+                            s.getFechaSancion(),
+                            mostrarUsuario(s),
+                            mostrarRecurso(s),
+                            s.getDiasRetraso(),
+                            s.getDiasSuspension(),
+                            mostrarEstado(s),
+                            "Acciones"
+                        });
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    modeloSanciones.setRowCount(0);
+                }
+            }
+        }.execute();
     }
 
     private void buscar() {
@@ -697,25 +706,31 @@ public class FRMSanciones extends JInternalFrame {
     }
 
     private static class FondoInternoPanel extends JPanel {
+
+        private static final ImageIcon FONDO;
+
+        static {
+            java.net.URL url = FRMSanciones.class.getResource("/imagenes/fondo.jpg");
+            FONDO = url != null ? new ImageIcon(url) : null;
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                java.net.URL url = Equipos.class.getResource("/imagenes/fondo.jpg");
-                javax.swing.ImageIcon fondo = url != null ? new javax.swing.ImageIcon(url) : null;
-                if (fondo != null && fondo.getImage() != null) {
+                if (FONDO != null && FONDO.getImage() != null) {
                     int w = getWidth();
                     int h = getHeight();
-                    int iw = fondo.getIconWidth();
-                    int ih = fondo.getIconHeight();
+                    int iw = FONDO.getIconWidth();
+                    int ih = FONDO.getIconHeight();
                     double scale = Math.max((double) w / iw, (double) h / ih);
                     int drawW = (int) Math.round(iw * scale);
                     int drawH = (int) Math.round(ih * scale);
                     int x = (w - drawW) / 2;
                     int y = (h - drawH) / 2;
-                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
+                    g2.drawImage(FONDO.getImage(), x, y, drawW, drawH, this);
                 } else {
                     g2.setPaint(new GradientPaint(0, 0, new Color(248, 250, 252), 0, getHeight(), new Color(235, 243, 238)));
                     g2.fillRect(0, 0, getWidth(), getHeight());
