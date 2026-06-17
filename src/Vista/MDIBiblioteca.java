@@ -19,6 +19,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDesktopPane;
 import javax.swing.JInternalFrame;
 import javax.swing.JFrame;
@@ -29,12 +30,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.plaf.basic.BasicButtonUI;
-import javax.swing.OverlayLayout;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyVetoException;
 
 public class MDIBiblioteca extends javax.swing.JFrame {
@@ -93,18 +96,35 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         ImageIcon fondoIcon = imgURL != null ? new ImageIcon(imgURL) : null;
 
         escritorio.removeAll();
-        escritorio.setLayout(new OverlayLayout(escritorio));
+        escritorio.setLayout(null);
 
-        FondoPanel panelFondo = new FondoPanel(fondoIcon);
-        panelFondo.setAlignmentX(0.5f);
-        panelFondo.setAlignmentY(0.5f);
+        JPanel dashboardPanel = new JPanel(new BorderLayout()) {
+            private final ImageIcon bg = fondoIcon;
 
-        JPanel contenedor = new JPanel(new BorderLayout());
-        contenedor.setOpaque(false);
-        contenedor.setAlignmentX(0.5f);
-        contenedor.setAlignmentY(0.5f);
-        contenedor.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        contenedor.setBorder(new EmptyBorder(18, 18, 18, 18));
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight();
+                if (bg != null && bg.getImage() != null) {
+                    int iw = bg.getIconWidth(), ih = bg.getIconHeight();
+                    double scale = Math.max((double) w / iw, (double) h / ih);
+                    int drawW = (int) Math.round(iw * scale);
+                    int drawH = (int) Math.round(ih * scale);
+                    g2.drawImage(bg.getImage(), (w - drawW) / 2, (h - drawH) / 2, drawW, drawH, this);
+                } else {
+                    g2.setPaint(new GradientPaint(0, 0, new Color(242, 245, 248), 0, h, new Color(223, 230, 236)));
+                    g2.fillRect(0, 0, w, h);
+                }
+                g2.setComposite(AlphaComposite.SrcOver.derive(0.80f));
+                g2.setPaint(new GradientPaint(0, 0, new Color(250, 252, 253, 205), 0, h, new Color(245, 248, 250, 185)));
+                g2.fillRect(0, 0, w, h);
+                g2.dispose();
+            }
+        };
+        dashboardPanel.setOpaque(false);
+        dashboardPanel.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
 
         RoundedPanel shell = new RoundedPanel(new Color(255, 255, 255, 214), new Color(255, 255, 255, 110), 28);
         shell.setLayout(new BorderLayout(0, 16));
@@ -113,13 +133,23 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         shell.add(crearBarraSuperior(), BorderLayout.NORTH);
         shell.add(crearContenidoPrincipal(), BorderLayout.CENTER);
 
-        contenedor.add(shell, BorderLayout.CENTER);
+        dashboardPanel.add(shell, BorderLayout.CENTER);
 
-        escritorio.add(panelFondo);
-        escritorio.add(contenedor);
+        escritorio.add(dashboardPanel);
+        escritorio.setLayer(dashboardPanel, 0);
 
-        escritorio.revalidate();
-        escritorio.repaint();
+        escritorio.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                dashboardPanel.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
+            }
+        });
+
+        SwingUtilities.invokeLater(() -> {
+            dashboardPanel.setBounds(0, 0, escritorio.getWidth(), escritorio.getHeight());
+            dashboardPanel.revalidate();
+            dashboardPanel.repaint();
+        });
     }
 
     private JPanel crearBarraSuperior() {
@@ -292,7 +322,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
                 new Color(145, 98, 10)
         ));
 
-        JPanel filaInferior = new JPanel(new GridLayout(1, 3, 16, 16));
+        JPanel filaInferior = new JPanel(new GridLayout(1, 2, 16, 16));
         filaInferior.setOpaque(false);
         filaInferior.add(crearTarjetaModulo(
                 "SM",
@@ -304,15 +334,14 @@ public class MDIBiblioteca extends javax.swing.JFrame {
                 new Color(165, 44, 44)
         ));
         filaInferior.add(crearTarjetaModulo(
-                "PDF",
+                "US",
                 SENA_BLUE,
-                "Manual de Usuario",
-                "Descarga la guía detallada con los procesos, permisos y límites correspondientes a tu perfil.",
-                "DESCARGAR PDF",
+                "Usuarios",
+                "Administra los usuarios registrados en el sistema de biblioteca.",
+                "ADMINISTRAR",
                 SENA_GREEN,
                 Color.WHITE
         ));
-        filaInferior.add(crearPanelVacio());
 
         raiz.add(filaSuperior);
         raiz.add(Box.createVerticalStrut(16));
@@ -336,11 +365,13 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             Color textoBoton) {
 
         RoundedPanel tarjeta = new RoundedPanel(Color.WHITE, new Color(230, 233, 239), 24);
-        tarjeta.setLayout(new BorderLayout(0, 16));
+        tarjeta.setLayout(new BorderLayout(0, 12));
         tarjeta.setBorder(new EmptyBorder(18, 18, 18, 18));
-        tarjeta.setPreferredSize(new Dimension(240, 200));
+        tarjeta.setPreferredSize(new Dimension(240, 220));
 
-        JPanel icono = new RoundedPanel(new Color(acento.getRed(), acento.getGreen(), acento.getBlue(), 24), new Color(acento.getRed(), acento.getGreen(), acento.getBlue(), 55), 18);
+        JPanel icono = new RoundedPanel(
+                new Color(acento.getRed(), acento.getGreen(), acento.getBlue(), 24),
+                new Color(acento.getRed(), acento.getGreen(), acento.getBlue(), 55), 18);
         icono.setPreferredSize(new Dimension(54, 54));
         icono.setLayout(new BorderLayout());
 
@@ -361,26 +392,67 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         descripcionLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
         descripcionLabel.setForeground(TEXT_SOFT);
 
+        JButton boton = new JButton(accion);
+        boton.setFont(new Font("SansSerif", Font.BOLD, 12));
+        boton.setForeground(textoBoton);
+        boton.setBackground(colorBoton);
+        boton.setFocusPainted(false);
+        boton.setBorderPainted(false);
+        boton.setOpaque(true);
+        boton.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        boton.setMinimumSize(new Dimension(0, 36));
+        boton.setPreferredSize(new Dimension(0, 36));
+        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        boton.setUI(new BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(colorBoton);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 12, 12);
+                super.paint(g2, c);
+                g2.dispose();
+            }
+        });
+        boton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                boton.setBackground(colorBoton.darker());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                boton.setBackground(colorBoton);
+            }
+        });
+        boton.addActionListener(e -> manejarAccionModulo(titulo));
+
         centro.add(tituloLabel);
         centro.add(Box.createVerticalStrut(8));
         centro.add(descripcionLabel);
         centro.add(Box.createVerticalGlue());
+        centro.add(Box.createVerticalStrut(8));
+        centro.add(boton);
 
         tarjeta.add(icono, BorderLayout.NORTH);
         tarjeta.add(centro, BorderLayout.CENTER);
-        tarjeta.addMouseListener(new java.awt.event.MouseAdapter() {
+
+        tarjeta.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                manejarAccionModulo(titulo);
+            public void mouseClicked(MouseEvent e) {
+                if (e.getSource() == tarjeta) {
+                    manejarAccionModulo(titulo);
+                }
             }
 
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent e) {
+            public void mouseEntered(MouseEvent e) {
                 tarjeta.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
             }
 
             @Override
-            public void mouseExited(java.awt.event.MouseEvent e) {
+            public void mouseExited(MouseEvent e) {
                 tarjeta.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
             }
         });
@@ -412,6 +484,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
+        if ("Préstamos".equals(modulo) || modulo.contains("Préstamos")) {
+            abrirModuloPrestamos();
+            return;
+        }
+
         JOptionPane.showMessageDialog(
                 this,
                 "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
@@ -425,9 +502,9 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             if (frame instanceof Equipos) {
                 try {
                     frame.setIcon(false);
+                    frame.setMaximum(true);
                     frame.setSelected(true);
                 } catch (PropertyVetoException ex) {
-                    // Si el sistema de ventanas lo bloquea, igual lo traemos al frente.
                 }
                 frame.toFront();
                 return;
@@ -440,13 +517,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         equipos.setIconifiable(true);
         equipos.setMaximizable(true);
         equipos.setResizable(true);
-        equipos.setSize(1080, 700);
-        equipos.setLocation(30, 30);
         escritorio.add(equipos);
         try {
             equipos.setSelected(true);
+            equipos.setMaximum(true);
         } catch (PropertyVetoException ex) {
-            // No bloqueamos la apertura por un veto visual.
         }
         equipos.toFront();
     }
@@ -456,9 +531,9 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             if (frame instanceof Libros) {
                 try {
                     frame.setIcon(false);
+                    frame.setMaximum(true);
                     frame.setSelected(true);
                 } catch (PropertyVetoException ex) {
-                    // Si el sistema de ventanas lo bloquea, igual lo traemos al frente.
                 }
                 frame.toFront();
                 return;
@@ -471,13 +546,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         libros.setIconifiable(true);
         libros.setMaximizable(true);
         libros.setResizable(true);
-        libros.setSize(1120, 720);
-        libros.setLocation(40, 40);
         escritorio.add(libros);
         try {
             libros.setSelected(true);
+            libros.setMaximum(true);
         } catch (PropertyVetoException ex) {
-            // No bloqueamos la apertura por un veto visual.
         }
         libros.toFront();
     }
@@ -487,9 +560,9 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             if (frame instanceof Usuarios) {
                 try {
                     frame.setIcon(false);
+                    frame.setMaximum(true);
                     frame.setSelected(true);
                 } catch (PropertyVetoException ex) {
-                    // Si el sistema de ventanas lo bloquea, igual lo traemos al frente.
                 }
                 frame.toFront();
                 return;
@@ -502,13 +575,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         usuarios.setIconifiable(true);
         usuarios.setMaximizable(true);
         usuarios.setResizable(true);
-        usuarios.setSize(1120, 720);
-        usuarios.setLocation(45, 45);
         escritorio.add(usuarios);
         try {
             usuarios.setSelected(true);
+            usuarios.setMaximum(true);
         } catch (PropertyVetoException ex) {
-            // No bloqueamos la apertura por un veto visual.
         }
         usuarios.toFront();
     }
@@ -519,9 +590,9 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             if (frame instanceof FRMSanciones) {
                 try {
                     frame.setIcon(false);
+                    frame.setMaximum(true);
                     frame.setSelected(true);
                 } catch (PropertyVetoException ex) {
-                    // No bloqueamos la apertura por un veto visual.
                 }
                 frame.toFront();
                 return;
@@ -535,16 +606,45 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             sanciones.setIconifiable(true);
             sanciones.setMaximizable(true);
             sanciones.setResizable(true);
-            sanciones.setSize(1120, 720);
-            sanciones.setLocation(50, 50);
             escritorio.add(sanciones);
             sanciones.setSelected(true);
+            sanciones.setMaximum(true);
             sanciones.toFront();
             System.out.println("[MDIBiblioteca] Modulo Sanciones abierto correctamente.");
         } catch (PropertyVetoException ex) {
-            // No bloqueamos la apertura por un veto visual.
         } catch (Exception ex) {
             System.out.println("[MDIBiblioteca] Error abriendo modulo Sanciones: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    private void abrirModuloPrestamos() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof FRMPrestamos) {
+                try {
+                    frame.setIcon(false);
+                    frame.setMaximum(true);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        try {
+            FRMPrestamos prestamos = new FRMPrestamos();
+            prestamos.setVisible(true);
+            prestamos.setClosable(true);
+            prestamos.setIconifiable(true);
+            prestamos.setMaximizable(true);
+            prestamos.setResizable(true);
+            escritorio.add(prestamos);
+            prestamos.setSelected(true);
+            prestamos.setMaximum(true);
+            prestamos.toFront();
+        } catch (PropertyVetoException ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
@@ -628,57 +728,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenu4;
     private javax.swing.JMenuItem jMenu5;
     private javax.swing.JMenuBar menuBar;
-
-    private static final class FondoPanel extends JPanel {
-
-        private final ImageIcon fondo;
-
-        private FondoPanel(ImageIcon fondo) {
-            this.fondo = fondo;
-            setOpaque(true);
-        }
-
-        @Override
-        public Dimension getMaximumSize() {
-            return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                if (fondo != null && fondo.getImage() != null) {
-                    int w = getWidth();
-                    int h = getHeight();
-                    int iw = fondo.getIconWidth();
-                    int ih = fondo.getIconHeight();
-
-                    double scale = Math.max((double) w / iw, (double) h / ih);
-                    int drawW = (int) Math.round(iw * scale);
-                    int drawH = (int) Math.round(ih * scale);
-                    int x = (w - drawW) / 2;
-                    int y = (h - drawH) / 2;
-                    g2.drawImage(fondo.getImage(), x, y, drawW, drawH, this);
-                } else {
-                    g2.setPaint(new GradientPaint(0, 0, new Color(242, 245, 248), 0, getHeight(), new Color(223, 230, 236)));
-                    g2.fillRect(0, 0, getWidth(), getHeight());
-                }
-
-                g2.setComposite(AlphaComposite.SrcOver.derive(0.80f));
-                g2.setPaint(new GradientPaint(0, 0, new Color(250, 252, 253, 205), 0, getHeight(), new Color(245, 248, 250, 185)));
-                g2.fillRect(0, 0, getWidth(), getHeight());
-
-                g2.setComposite(AlphaComposite.SrcOver.derive(0.20f));
-                g2.setPaint(new GradientPaint(0, 0, new Color(255, 255, 255, 0), getWidth(), getHeight(), new Color(255, 255, 255, 100)));
-                g2.fillRect(0, 0, getWidth(), getHeight());
-            } finally {
-                g2.dispose();
-            }
-        }
-    }
 
     private static class RoundedPanel extends JPanel {
 
