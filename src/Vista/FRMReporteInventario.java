@@ -36,6 +36,8 @@ public class FRMReporteInventario extends JInternalFrame {
     private List<Equipo> listaEquipos;
     private List<Libro> listaLibros;
 
+    private JTextField txtBuscar;
+
     public FRMReporteInventario() {
         super("Reporte de Inventario", true, true, true, true);
         equipoControlador = new EquipoControlador();
@@ -54,17 +56,15 @@ public class FRMReporteInventario extends JInternalFrame {
         raiz.setLayout(new BorderLayout(0, 0));
         raiz.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        JPanel contenido = new JPanel(new BorderLayout(0, 16));
+        JPanel contenido = new JPanel(new BorderLayout(0, 8));
         contenido.setOpaque(false);
-        contenido.setBorder(new EmptyBorder(24, 32, 24, 32));
 
-        contenido.add(crearHeader(), BorderLayout.NORTH);
-        contenido.add(crearFiltros(), BorderLayout.CENTER);
-
-        JPanel tablaPanel = new JPanel(new BorderLayout(0, 12));
-        tablaPanel.setOpaque(false);
-        tablaPanel.add(crearTabs(), BorderLayout.CENTER);
-        contenido.add(tablaPanel, BorderLayout.SOUTH);
+        JPanel superior = new JPanel(new BorderLayout(0, 8));
+        superior.setOpaque(false);
+        superior.add(crearHeader(), BorderLayout.NORTH);
+        superior.add(crearFiltros(), BorderLayout.SOUTH);
+        contenido.add(superior, BorderLayout.NORTH);
+        contenido.add(crearTabs(), BorderLayout.CENTER);
 
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
@@ -78,7 +78,7 @@ public class FRMReporteInventario extends JInternalFrame {
             }
         };
         card.setOpaque(false);
-        card.setBorder(new EmptyBorder(20, 20, 20, 20));
+        card.setBorder(new EmptyBorder(16, 24, 16, 24));
         card.add(contenido, BorderLayout.CENTER);
 
         raiz.add(card, BorderLayout.CENTER);
@@ -163,7 +163,7 @@ public class FRMReporteInventario extends JInternalFrame {
     }
 
     private JPanel crearFiltros() {
-        JPanel filtros = new JPanel(new GridBagLayout()) {
+        JPanel filtros = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 8)) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -175,27 +175,37 @@ public class FRMReporteInventario extends JInternalFrame {
             }
         };
         filtros.setOpaque(false);
-        filtros.setBorder(new EmptyBorder(16, 16, 16, 16));
+        filtros.setBorder(new EmptyBorder(12, 16, 12, 16));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 8, 0, 8);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel lblBuscar = new JLabel("BUSCAR");
+        lblBuscar.setFont(new Font("SansSerif", Font.BOLD, 10));
+        lblBuscar.setForeground(TEXT_SOFT);
+
+        txtBuscar = new JTextField(18);
+        txtBuscar.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        txtBuscar.setPreferredSize(new Dimension(200, 36));
+        txtBuscar.addKeyListener(new KeyAdapter() {
+            @Override public void keyReleased(KeyEvent e) { aplicarFiltros(); }
+        });
+
+        JPanel pnlBuscar = new JPanel();
+        pnlBuscar.setOpaque(false);
+        pnlBuscar.setLayout(new BoxLayout(pnlBuscar, BoxLayout.Y_AXIS));
+        pnlBuscar.add(lblBuscar);
+        pnlBuscar.add(Box.createVerticalStrut(4));
+        pnlBuscar.add(txtBuscar);
+        filtros.add(pnlBuscar);
 
         cmbEstado = new JComboBox<>(new String[]{"Todos los estados", "disponible", "prestado", "mantenimiento", "dañado"});
         cmbEstado.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        cmbEstado.setPreferredSize(new Dimension(180, 38));
-        gbc.gridx = 0; gbc.weightx = 1;
-        filtros.add(crearCampoFiltro("ESTADO", cmbEstado), gbc);
+        cmbEstado.setPreferredSize(new Dimension(180, 36));
+        filtros.add(crearCampoFiltro("ESTADO", cmbEstado));
 
         cmbTipoEquipo = new JComboBox<>(new String[]{"Todos los tipos"});
         cmbTipoEquipo.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        cmbTipoEquipo.setPreferredSize(new Dimension(180, 38));
-        gbc.gridx = 1; gbc.weightx = 1;
-        filtros.add(crearCampoFiltro("TIPO DE EQUIPO", cmbTipoEquipo), gbc);
+        cmbTipoEquipo.setPreferredSize(new Dimension(180, 36));
+        filtros.add(crearCampoFiltro("TIPO DE EQUIPO", cmbTipoEquipo));
 
-        JPanel pnlBtnFiltrar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 20));
-        pnlBtnFiltrar.setOpaque(false);
         JButton btnFiltrar = new JButton("\uD83D\uDD0D Filtrar");
         btnFiltrar.setFont(new Font("SansSerif", Font.BOLD, 13));
         btnFiltrar.setForeground(Color.WHITE);
@@ -203,16 +213,15 @@ public class FRMReporteInventario extends JInternalFrame {
         btnFiltrar.setFocusPainted(false);
         btnFiltrar.setBorderPainted(false);
         btnFiltrar.setOpaque(true);
-        btnFiltrar.setPreferredSize(new Dimension(130, 38));
+        btnFiltrar.setPreferredSize(new Dimension(140, 36));
         btnFiltrar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnFiltrar.setBorder(new EmptyBorder(0, 12, 0, 12));
         btnFiltrar.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) { btnFiltrar.setBackground(SENA_GREEN_DARK); }
             @Override public void mouseExited(MouseEvent e) { btnFiltrar.setBackground(SENA_GREEN); }
         });
         btnFiltrar.addActionListener(e -> aplicarFiltros());
-        pnlBtnFiltrar.add(btnFiltrar);
-        gbc.gridx = 2; gbc.weightx = 0;
-        filtros.add(pnlBtnFiltrar, gbc);
+        filtros.add(btnFiltrar);
 
         return filtros;
     }
@@ -423,15 +432,20 @@ public class FRMReporteInventario extends JInternalFrame {
     }
 
     private void aplicarFiltros() {
+        String buscar = txtBuscar != null ? txtBuscar.getText().trim().toLowerCase() : "";
         String estado = (String) cmbEstado.getSelectedItem();
         String tipo = (String) cmbTipoEquipo.getSelectedItem();
 
         modeloEquipos.setRowCount(0);
         if (listaEquipos != null) {
             for (Equipo e : listaEquipos) {
+                boolean okBuscar = buscar.isEmpty()
+                        || (e.getNombre() != null && e.getNombre().toLowerCase().contains(buscar))
+                        || (e.getMarca() != null && e.getMarca().toLowerCase().contains(buscar))
+                        || (e.getNumeroSerie() != null && e.getNumeroSerie().toLowerCase().contains(buscar));
                 boolean okEstado = "Todos los estados".equals(estado) || e.getEstado().equalsIgnoreCase(estado);
                 boolean okTipo = "Todos los tipos".equals(tipo) || (e.getTipoEquipo() != null && e.getTipoEquipo().equalsIgnoreCase(tipo));
-                if (okEstado && okTipo) {
+                if (okBuscar && okEstado && okTipo) {
                     modeloEquipos.addRow(new Object[]{
                         "E-" + e.getIdEquipo(),
                         e.getNombre() + (e.getMarca() != null ? "\n" + e.getMarca() : ""),
@@ -445,113 +459,40 @@ public class FRMReporteInventario extends JInternalFrame {
             }
             lblConteoEquipos.setText(String.valueOf(modeloEquipos.getRowCount()));
         }
+
+        modeloLibros.setRowCount(0);
+        if (listaLibros != null) {
+            for (Libro l : listaLibros) {
+                boolean okBuscar = buscar.isEmpty()
+                        || (l.getTitulo() != null && l.getTitulo().toLowerCase().contains(buscar))
+                        || (l.getAutor() != null && l.getAutor().toLowerCase().contains(buscar))
+                        || (l.getCodigoUnico() != null && l.getCodigoUnico().toLowerCase().contains(buscar));
+                boolean okEstado = "Todos los estados".equals(estado) || l.getEstado().equalsIgnoreCase(estado);
+                if (okBuscar && okEstado) {
+                    modeloLibros.addRow(new Object[]{
+                        "L-" + l.getIdLibro(),
+                        l.getTitulo(),
+                        l.getAutor(),
+                        l.getGenero(),
+                        l.getCodigoUnico(),
+                        l.getEstado(),
+                        l.getUbicacion()
+                    });
+                }
+            }
+            lblConteoLibros.setText(String.valueOf(modeloLibros.getRowCount()));
+        }
     }
 
     private void exportarExcel() {
-        JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new File("Reporte_Inventario.csv"));
-        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("CSV (*.csv)", "csv"));
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try (PrintWriter pw = new PrintWriter(new FileWriter(fc.getSelectedFile()))) {
-                pw.println("REF,NOMBRE,TIPO,N° SERIE,ESTADO,UBICACIÓN,REGISTRO");
-                for (int i = 0; i < modeloEquipos.getRowCount(); i++) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int j = 0; j < modeloEquipos.getColumnCount(); j++) {
-                        Object val = modeloEquipos.getValueAt(i, j);
-                        String s = val != null ? val.toString().replace("\n", " ").replace(",", ";") : "";
-                        if (j > 0) sb.append(",");
-                        sb.append("\"").append(s).append("\"");
-                    }
-                    pw.println(sb);
-                }
-                pw.println();
-                pw.println("--- LIBROS ---");
-                pw.println("REF,TÍTULO,AUTOR,GÉNERO,CÓDIGO,ESTADO,UBICACIÓN");
-                for (int i = 0; i < modeloLibros.getRowCount(); i++) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int j = 0; j < modeloLibros.getColumnCount(); j++) {
-                        Object val = modeloLibros.getValueAt(i, j);
-                        String s = val != null ? val.toString().replace("\n", " ").replace(",", ";") : "";
-                        if (j > 0) sb.append(",");
-                        sb.append("\"").append(s).append("\"");
-                    }
-                    pw.println(sb);
-                }
-                JOptionPane.showMessageDialog(this, "Reporte exportado correctamente.\n" + fc.getSelectedFile().getAbsolutePath());
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error al exportar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        ExportUtil.exportarCSV(tablaEquipos, tablaLibros, modeloEquipos, modeloLibros,
+                "--- EQUIPOS ---", "--- LIBROS ---", this);
     }
 
     private void exportarPDF() {
-        JFileChooser fc = new JFileChooser();
-        fc.setSelectedFile(new File("Reporte_Inventario.html"));
-        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("HTML (*.html)", "html"));
-        if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try (PrintWriter pw = new PrintWriter(new FileWriter(fc.getSelectedFile()))) {
-                pw.println("<!DOCTYPE html><html><head><meta charset='UTF-8'>");
-                pw.println("<title>Reporte de Inventario</title>");
-                pw.println("<style>");
-                pw.println("body{font-family:Arial,sans-serif;margin:30px;color:#1c222d;}");
-                pw.println("h1{color:#2eaa54;font-size:24px;}");
-                pw.println("h2{color:#2eaa54;font-size:18px;margin-top:30px;}");
-                pw.println("table{border-collapse:collapse;width:100%;margin-top:10px;}");
-                pw.println("th{background:#f8fafc;color:#606979;padding:10px 12px;text-align:left;font-size:12px;border-bottom:2px solid #dfe4ea;}");
-                pw.println("td{padding:8px 12px;border-bottom:1px solid #eef1f5;font-size:13px;}");
-                pw.println("tr:nth-child(even){background:#f9fafb;}");
-                pw.println(".badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:bold;display:inline-block;}");
-                pw.println(".disponible{background:#dcfce7;color:#16a34a;}");
-                pw.println(".prestado{background:#ffedd5;color:#c2410c;}");
-                pw.println(".mantenimiento{background:#dbeafe;color:#2563eb;}");
-                pw.println(".header{display:flex;justify-content:space-between;align-items:center;}");
-                pw.println("</style></head><body>");
-                pw.println("<div class='header'><h1>\uD83D\uDCE6 Reporte de Inventario</h1><p>Fecha: " + new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(new java.util.Date()) + "</p></div>");
-
-                pw.println("<h2>\uD83D\uDCE6 Equipos (" + modeloEquipos.getRowCount() + ")</h2>");
-                pw.println("<table><tr><th>REF</th><th>NOMBRE</th><th>TIPO</th><th>N° SERIE</th><th>ESTADO</th><th>UBICACIÓN</th><th>REGISTRO</th></tr>");
-                for (int i = 0; i < modeloEquipos.getRowCount(); i++) {
-                    pw.println("<tr>");
-                    for (int j = 0; j < modeloEquipos.getColumnCount(); j++) {
-                        Object val = modeloEquipos.getValueAt(i, j);
-                        String s = val != null ? val.toString().replace("\n", " ") : "";
-                        if (j == 4) {
-                            String cls = s.toLowerCase().replace("á","a").replace("é","e");
-                            if (cls.equals("disponible") || cls.equals("activo")) s = "<span class='badge disponible'>" + s.toUpperCase() + "</span>";
-                            else if (cls.equals("prestado")) s = "<span class='badge prestado'>PRESTADO</span>";
-                            else if (cls.equals("mantenimiento")) s = "<span class='badge mantenimiento'>MANTENIMIENTO</span>";
-                        }
-                        pw.println("<td>" + s + "</td>");
-                    }
-                    pw.println("</tr>");
-                }
-                pw.println("</table>");
-
-                pw.println("<h2>\uD83D\uDCDA Libros (" + modeloLibros.getRowCount() + ")</h2>");
-                pw.println("<table><tr><th>REF</th><th>TÍTULO</th><th>AUTOR</th><th>GÉNERO</th><th>CÓDIGO</th><th>ESTADO</th><th>UBICACIÓN</th></tr>");
-                for (int i = 0; i < modeloLibros.getRowCount(); i++) {
-                    pw.println("<tr>");
-                    for (int j = 0; j < modeloLibros.getColumnCount(); j++) {
-                        Object val = modeloLibros.getValueAt(i, j);
-                        String s = val != null ? val.toString().replace("\n", " ") : "";
-                        if (j == 5) {
-                            String cls = s.toLowerCase().replace("á","a").replace("é","e");
-                            if (cls.equals("disponible") || cls.equals("activo")) s = "<span class='badge disponible'>" + s.toUpperCase() + "</span>";
-                            else if (cls.equals("prestado")) s = "<span class='badge prestado'>PRESTADO</span>";
-                        }
-                        pw.println("<td>" + s + "</td>");
-                    }
-                    pw.println("</tr>");
-                }
-                pw.println("</table>");
-                pw.println("</body></html>");
-                pw.flush();
-                java.awt.Desktop.getDesktop().open(fc.getSelectedFile());
-                JOptionPane.showMessageDialog(this, "Reporte generado. Use Ctrl+P en el navegador para guardar como PDF.");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error al exportar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        ExportUtil.exportarPDF(modeloEquipos, modeloLibros,
+                "Reporte de Inventario", "Inventario Institucional - " +
+                new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(new java.util.Date()), this);
     }
 
     private static class FondoInternoPanel extends JPanel {
