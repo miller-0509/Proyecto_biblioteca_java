@@ -53,12 +53,78 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     private static final Color TEXT_SOFT = new Color(96, 105, 121);
     private static final Color WHITE_ALPHA = new Color(255, 255, 255, 232);
 
+    private java.util.List<JInternalFrame> navHistory = new java.util.ArrayList<>();
+    private int navIndex = -1;
+    private boolean navInternalUpdate = false;
+    private JButton btnNavBack;
+    private JButton btnNavForward;
+
     public MDIBiblioteca() {
         initComponents();
         configurarAparienciaBase();
         construirDashboardVisual();
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
+        initNavigation();
+    }
+
+    private void initNavigation() {
+        escritorio.addContainerListener(new java.awt.event.ContainerAdapter() {
+            @Override
+            public void componentAdded(java.awt.event.ContainerEvent e) {
+                if (e.getChild() instanceof JInternalFrame) {
+                    JInternalFrame frame = (JInternalFrame) e.getChild();
+                    frame.addInternalFrameListener(new javax.swing.event.InternalFrameAdapter() {
+                        @Override
+                        public void internalFrameActivated(javax.swing.event.InternalFrameEvent ev) {
+                            if (!navInternalUpdate) {
+                                navHistory.remove(frame);
+                                navHistory.add(frame);
+                                navIndex = navHistory.size() - 1;
+                                actualizarBotonesNavegacion();
+                            }
+                        }
+                        @Override
+                        public void internalFrameClosed(javax.swing.event.InternalFrameEvent ev) {
+                            navHistory.remove(frame);
+                            if (navIndex >= navHistory.size()) navIndex = navHistory.size() - 1;
+                            actualizarBotonesNavegacion();
+                        }
+                    });
+                    navHistory.remove(frame);
+                    navHistory.add(frame);
+                    navIndex = navHistory.size() - 1;
+                    actualizarBotonesNavegacion();
+                }
+            }
+        });
+    }
+
+    private void navegarAtras() {
+        if (navIndex > 0) {
+            navInternalUpdate = true;
+            navIndex--;
+            JInternalFrame frame = navHistory.get(navIndex);
+            try { frame.setIcon(false); frame.setSelected(true); frame.toFront(); } catch (Exception ex) {}
+            navInternalUpdate = false;
+            actualizarBotonesNavegacion();
+        }
+    }
+
+    private void navegarAdelante() {
+        if (navIndex < navHistory.size() - 1) {
+            navInternalUpdate = true;
+            navIndex++;
+            JInternalFrame frame = navHistory.get(navIndex);
+            try { frame.setIcon(false); frame.setSelected(true); frame.toFront(); } catch (Exception ex) {}
+            navInternalUpdate = false;
+            actualizarBotonesNavegacion();
+        }
+    }
+
+    private void actualizarBotonesNavegacion() {
+        if (btnNavBack != null) btnNavBack.setEnabled(navIndex > 0);
+        if (btnNavForward != null) btnNavForward.setEnabled(navIndex < navHistory.size() - 1);
     }
 
     private void configurarAparienciaBase() {
@@ -85,10 +151,10 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         jMenu2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         jMenu2.setIcon(null);
 
-        aplicarEstiloMenuItem(mnuVerEquiposPrestados);
-        aplicarEstiloMenuItem(mnuVerLibrosPrestados);
-        aplicarEstiloMenuItem(mnuSolicitarEquipo);
-        aplicarEstiloMenuItem(mnuSolicitarLibro);
+        estiloMenuItemSimple(mnuVerEquiposPrestados);
+        estiloMenuItemSimple(mnuVerLibrosPrestados);
+        estiloMenuItemSimple(mnuSolicitarEquipo);
+        estiloMenuItemSimple(mnuSolicitarLibro);
 
         mnuSolicitarEquipo.setIcon(new javax.swing.Icon() {
             private final Color c = SENA_GREEN;
@@ -123,9 +189,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             @Override public int getIconHeight() { return 16; }
         });
 
-        javax.swing.JSeparator sep1 = new javax.swing.JSeparator();
-        sep1.setBackground(new Color(223, 228, 234));
-        sep1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         mnuVerEquiposPrestados.setIcon(new javax.swing.Icon() {
             @Override public void paintIcon(java.awt.Component comp, java.awt.Graphics g, int x, int y) {
                 java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
@@ -155,8 +218,74 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             @Override public int getIconHeight() { return 16; }
         });
 
+        agregarFlechasNavegacion();
+
         escritorio.setOpaque(false);
         escritorio.setBorder(BorderFactory.createEmptyBorder());
+    }
+
+    private void agregarFlechasNavegacion() {
+        Color navBg = new Color(240, 243, 247);
+        Color navBorder = new Color(220, 225, 232);
+        Color navIcon = new Color(96, 105, 121);
+        Color navDisabled = new Color(180, 185, 195);
+
+        btnNavBack = new JButton("<") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isEnabled() ? navBg : new Color(248, 249, 251));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(isEnabled() ? navBorder : new Color(235, 237, 240));
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                g2.setColor(isEnabled() ? navIcon : navDisabled);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                String txt = "<";
+                g2.drawString(txt, (getWidth() - fm.stringWidth(txt)) / 2, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+                g2.dispose();
+            }
+        };
+        btnNavBack.setPreferredSize(new Dimension(30, 30));
+        btnNavBack.setMinimumSize(new Dimension(30, 30));
+        btnNavBack.setMaximumSize(new Dimension(30, 30));
+        btnNavBack.setContentAreaFilled(false);
+        btnNavBack.setBorderPainted(false);
+        btnNavBack.setFocusPainted(false);
+        btnNavBack.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnNavBack.setEnabled(false);
+        btnNavBack.addActionListener(e -> navegarAtras());
+
+        btnNavForward = new JButton(">") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(isEnabled() ? navBg : new Color(248, 249, 251));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(isEnabled() ? navBorder : new Color(235, 237, 240));
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                g2.setColor(isEnabled() ? navIcon : navDisabled);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                String txt = ">";
+                g2.drawString(txt, (getWidth() - fm.stringWidth(txt)) / 2, (getHeight() + fm.getAscent() - fm.getDescent()) / 2);
+                g2.dispose();
+            }
+        };
+        btnNavForward.setPreferredSize(new Dimension(30, 30));
+        btnNavForward.setMinimumSize(new Dimension(30, 30));
+        btnNavForward.setMaximumSize(new Dimension(30, 30));
+        btnNavForward.setContentAreaFilled(false);
+        btnNavForward.setBorderPainted(false);
+        btnNavForward.setFocusPainted(false);
+        btnNavForward.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnNavForward.setEnabled(false);
+        btnNavForward.addActionListener(e -> navegarAdelante());
+
+        menuBar.add(Box.createHorizontalGlue());
+        menuBar.add(btnNavBack);
+        menuBar.add(Box.createHorizontalStrut(2));
+        menuBar.add(btnNavForward);
     }
 
     private void aplicarEstiloMenuItem(JMenuItem item) {
@@ -167,6 +296,15 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         item.setBackground(Color.WHITE);
         item.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         item.addActionListener(evt -> manejarAccionModulo(item.getText()));
+    }
+
+    private void estiloMenuItemSimple(JMenuItem item) {
+        item.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        item.setForeground(TEXT_DARK);
+        item.setBorder(new EmptyBorder(7, 12, 7, 12));
+        item.setOpaque(true);
+        item.setBackground(Color.WHITE);
+        item.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
     }
 
     private void construirDashboardVisual() {
@@ -552,7 +690,27 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
-        if ("Libros".equals(modulo) || modulo.contains("Libros")) {
+        if ("Ver Equipos Prestados".equals(modulo) || "Ver Todos Préstamos de Equipos".equals(modulo)) {
+            abrirModuloPrestamosEquipos();
+            return;
+        }
+
+        if ("Ver Libros Prestados".equals(modulo) || "Ver Todos Préstamos de Libros".equals(modulo)) {
+            abrirModuloPrestamosLibros();
+            return;
+        }
+
+        if ("Solicitar Equipo".equals(modulo) || "Solicitar Préstamo de Equipo".equals(modulo)) {
+            abrirFormularioNuevoEquipo();
+            return;
+        }
+
+        if ("Solicitar Libro".equals(modulo) || "Solicitar Préstamo de Libro".equals(modulo)) {
+            abrirFormularioNuevoLibro();
+            return;
+        }
+
+        if ("Libros".equals(modulo) || "Catálogo de Libros".equals(modulo)) {
             abrirModuloLibros();
             return;
         }
@@ -572,57 +730,15 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
-        if ("Préstamos".equals(modulo) || modulo.contains("Préstamos")) {
-            abrirModuloPrestamos();
-            return;
-        }
-
-        if ("Ver Equipos Prestados".equals(modulo)) {
+        if ("Préstamos".equals(modulo)) {
             abrirModuloPrestamosEquipos();
             return;
         }
 
-        if ("Ver Libros Prestados".equals(modulo)) {
-            abrirModuloPrestamosLibros();
+        if ("Reportes".equals(modulo)) {
+            abrirModuloReportes();
             return;
         }
-
-        if ("Solicitar Equipo".equals(modulo)) {
-            abrirModuloPrestamosEquipos();
-            return;
-        }
-
-        if ("Solicitar Libro".equals(modulo)) {
-            abrirModuloPrestamosLibros();
-            return;
-        }
-
-        if ("Ver Equipos Prestados".equals(modulo)) {
-            abrirModuloPrestamosEquipos();
-            return;
-        }
-
-        if ("Ver Libros Prestados".equals(modulo)) {
-            abrirModuloPrestamosLibros();
-            return;
-        }
-
-        if ("Solicitar Equipo".equals(modulo)) {
-            abrirModuloPrestamosEquipos();
-            return;
-        }
-
-        if ("Solicitar Libro".equals(modulo)) {
-            abrirModuloPrestamosLibros();
-            return;
-        }
-
-        JOptionPane.showMessageDialog(
-                this,
-                "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
-                "Módulo en desarrollo",
-                JOptionPane.INFORMATION_MESSAGE
-        );
     }
 
     private void abrirModuloEquipos() {
@@ -839,13 +955,35 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         }
     }
 
-    private void mostrarModuloEnDesarrollo(String modulo) {
-        JOptionPane.showMessageDialog(
-                this,
-                "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
-                "Módulo en desarrollo",
-                JOptionPane.INFORMATION_MESSAGE
-        );
+    private void abrirFormularioNuevoEquipo() {
+        new FRMNuevoPrestamoEquipo(this, null).setVisible(true);
+    }
+
+    private void abrirFormularioNuevoLibro() {
+        new FRMNuevoPrestamoLibro(this, null).setVisible(true);
+    }
+
+    private void abrirModuloReportes() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof FRMReportes) {
+                try { frame.setIcon(false); frame.setSelected(true); } catch (PropertyVetoException ex) {}
+                frame.toFront();
+                return;
+            }
+        }
+        try {
+            FRMReportes reportes = new FRMReportes();
+            reportes.setVisible(true);
+            reportes.setClosable(true);
+            reportes.setIconifiable(true);
+            reportes.setMaximizable(true);
+            reportes.setResizable(true);
+            escritorio.add(reportes);
+            reportes.setSelected(true);
+            reportes.setMaximum(true);
+            reportes.toFront();
+        } catch (PropertyVetoException ex) {
+        } catch (Exception ex) { ex.printStackTrace(); }
     }
 
     public static void main(String args[]) {

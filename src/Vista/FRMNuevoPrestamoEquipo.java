@@ -45,6 +45,7 @@ public class FRMNuevoPrestamoEquipo extends JDialog {
         setSize(520, 520);
         setLocationRelativeTo(getOwner());
         setResizable(false);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         JPanel contenido = new JPanel(new BorderLayout(0, 16));
         contenido.setBorder(new EmptyBorder(22, 24, 22, 24));
@@ -192,7 +193,7 @@ public class FRMNuevoPrestamoEquipo extends JDialog {
         int id = prestamoControlador.crearEquipo(p);
         if (id > 0) {
             JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
-            frmPadre.refrescar();
+            if (frmPadre != null) frmPadre.refrescar();
             dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Error al registrar el préstamo.", "Error", JOptionPane.ERROR_MESSAGE);
