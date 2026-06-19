@@ -73,10 +73,87 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
         aplicarEstiloMenuItem(fileMenu);
         aplicarEstiloMenuItem(jMenu1);
-        aplicarEstiloMenuItem(jMenu2);
         aplicarEstiloMenuItem(jMenu3);
         aplicarEstiloMenuItem(jMenu4);
         aplicarEstiloMenuItem(jMenu5);
+
+        jMenu2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        jMenu2.setForeground(TEXT_DARK);
+        jMenu2.setBorder(new EmptyBorder(7, 12, 7, 12));
+        jMenu2.setOpaque(true);
+        jMenu2.setBackground(Color.WHITE);
+        jMenu2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jMenu2.setIcon(null);
+
+        aplicarEstiloMenuItem(mnuVerEquiposPrestados);
+        aplicarEstiloMenuItem(mnuVerLibrosPrestados);
+        aplicarEstiloMenuItem(mnuSolicitarEquipo);
+        aplicarEstiloMenuItem(mnuSolicitarLibro);
+
+        mnuSolicitarEquipo.setIcon(new javax.swing.Icon() {
+            private final Color c = SENA_GREEN;
+            @Override public void paintIcon(java.awt.Component comp, java.awt.Graphics g, int x, int y) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(c);
+                g2.fillOval(x, y, 16, 16);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new java.awt.BasicStroke(2));
+                g2.drawLine(x + 4, y + 8, x + 12, y + 8);
+                g2.drawLine(x + 8, y + 4, x + 8, y + 12);
+                g2.dispose();
+            }
+            @Override public int getIconWidth() { return 16; }
+            @Override public int getIconHeight() { return 16; }
+        });
+        mnuSolicitarLibro.setIcon(new javax.swing.Icon() {
+            private final Color c = new Color(57, 181, 120);
+            @Override public void paintIcon(java.awt.Component comp, java.awt.Graphics g, int x, int y) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(c);
+                g2.fillOval(x, y, 16, 16);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new java.awt.BasicStroke(2));
+                g2.drawLine(x + 4, y + 8, x + 12, y + 8);
+                g2.drawLine(x + 8, y + 4, x + 8, y + 12);
+                g2.dispose();
+            }
+            @Override public int getIconWidth() { return 16; }
+            @Override public int getIconHeight() { return 16; }
+        });
+
+        javax.swing.JSeparator sep1 = new javax.swing.JSeparator();
+        sep1.setBackground(new Color(223, 228, 234));
+        sep1.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        mnuVerEquiposPrestados.setIcon(new javax.swing.Icon() {
+            @Override public void paintIcon(java.awt.Component comp, java.awt.Graphics g, int x, int y) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(TEXT_SOFT);
+                g2.setStroke(new java.awt.BasicStroke(1.5f));
+                int w = 14, h = 10;
+                g2.drawRoundRect(x + 1, y + 3, w, h, 2, 2);
+                g2.drawLine(x + 3, y + 1, x + 12, y + 1);
+                g2.dispose();
+            }
+            @Override public int getIconWidth() { return 16; }
+            @Override public int getIconHeight() { return 16; }
+        });
+        mnuVerLibrosPrestados.setIcon(new javax.swing.Icon() {
+            @Override public void paintIcon(java.awt.Component comp, java.awt.Graphics g, int x, int y) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(TEXT_SOFT);
+                g2.setStroke(new java.awt.BasicStroke(1.5f));
+                g2.drawRoundRect(x + 2, y + 2, 12, 12, 2, 2);
+                g2.drawLine(x + 5, y + 5, x + 11, y + 5);
+                g2.drawLine(x + 5, y + 8, x + 11, y + 8);
+                g2.dispose();
+            }
+            @Override public int getIconWidth() { return 16; }
+            @Override public int getIconHeight() { return 16; }
+        });
 
         escritorio.setOpaque(false);
         escritorio.setBorder(BorderFactory.createEmptyBorder());
@@ -500,6 +577,46 @@ public class MDIBiblioteca extends javax.swing.JFrame {
             return;
         }
 
+        if ("Ver Equipos Prestados".equals(modulo)) {
+            abrirModuloPrestamosEquipos();
+            return;
+        }
+
+        if ("Ver Libros Prestados".equals(modulo)) {
+            abrirModuloPrestamosLibros();
+            return;
+        }
+
+        if ("Solicitar Equipo".equals(modulo)) {
+            abrirModuloPrestamosEquipos();
+            return;
+        }
+
+        if ("Solicitar Libro".equals(modulo)) {
+            abrirModuloPrestamosLibros();
+            return;
+        }
+
+        if ("Ver Equipos Prestados".equals(modulo)) {
+            abrirModuloPrestamosEquipos();
+            return;
+        }
+
+        if ("Ver Libros Prestados".equals(modulo)) {
+            abrirModuloPrestamosLibros();
+            return;
+        }
+
+        if ("Solicitar Equipo".equals(modulo)) {
+            abrirModuloPrestamosEquipos();
+            return;
+        }
+
+        if ("Solicitar Libro".equals(modulo)) {
+            abrirModuloPrestamosLibros();
+            return;
+        }
+
         JOptionPane.showMessageDialog(
                 this,
                 "El módulo \"" + modulo + "\" todavía no tiene ventana interna creada en este proyecto.",
@@ -631,7 +748,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
     private void abrirModuloPrestamos() {
         for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMPrestamos) {
+            if (frame instanceof FRMPrestamosEquipos) {
                 try {
                     frame.setIcon(false);
                     frame.setMaximum(true);
@@ -644,7 +761,69 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         }
 
         try {
-            FRMPrestamos prestamos = new FRMPrestamos();
+            FRMPrestamosEquipos prestamos = new FRMPrestamosEquipos();
+            prestamos.setVisible(true);
+            prestamos.setClosable(true);
+            prestamos.setIconifiable(true);
+            prestamos.setMaximizable(true);
+            prestamos.setResizable(true);
+            escritorio.add(prestamos);
+            prestamos.setSelected(true);
+            prestamos.setMaximum(true);
+            prestamos.toFront();
+        } catch (PropertyVetoException ex) {
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void abrirModuloPrestamosEquipos() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof FRMPrestamosEquipos) {
+                try {
+                    frame.setIcon(false);
+                    frame.setMaximum(true);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        try {
+            FRMPrestamosEquipos prestamos = new FRMPrestamosEquipos();
+            prestamos.setVisible(true);
+            prestamos.setClosable(true);
+            prestamos.setIconifiable(true);
+            prestamos.setMaximizable(true);
+            prestamos.setResizable(true);
+            escritorio.add(prestamos);
+            prestamos.setSelected(true);
+            prestamos.setMaximum(true);
+            prestamos.toFront();
+        } catch (PropertyVetoException ex) {
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void abrirModuloPrestamosLibros() {
+        for (JInternalFrame frame : escritorio.getAllFrames()) {
+            if (frame instanceof FRMPrestamosLibros) {
+                try {
+                    frame.setIcon(false);
+                    frame.setMaximum(true);
+                    frame.setSelected(true);
+                } catch (PropertyVetoException ex) {
+                }
+                frame.toFront();
+                return;
+            }
+        }
+
+        try {
+            FRMPrestamosLibros prestamos = new FRMPrestamosLibros();
             prestamos.setVisible(true);
             prestamos.setClosable(true);
             prestamos.setIconifiable(true);
@@ -694,7 +873,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenuItem();
         jMenu1 = new javax.swing.JMenuItem();
-        jMenu2 = new javax.swing.JMenuItem();
+        jMenu2 = new javax.swing.JMenu();
+        mnuVerEquiposPrestados = new javax.swing.JMenuItem();
+        mnuVerLibrosPrestados = new javax.swing.JMenuItem();
+        mnuSolicitarEquipo = new javax.swing.JMenuItem();
+        mnuSolicitarLibro = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenuItem();
         jMenu4 = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenuItem();
@@ -706,8 +889,30 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
         jMenu1.setText("Libros");
         menuBar.add(jMenu1);
+
         jMenu2.setText("Préstamos");
+        jMenu2.setName("jMenu2");
+
+        mnuVerEquiposPrestados.setText("Ver Todos Préstamos de Equipos");
+        mnuVerEquiposPrestados.addActionListener(evt -> manejarAccionModulo("Ver Equipos Prestados"));
+        jMenu2.add(mnuVerEquiposPrestados);
+
+        mnuVerLibrosPrestados.setText("Ver Todos Préstamos de Libros");
+        mnuVerLibrosPrestados.addActionListener(evt -> manejarAccionModulo("Ver Libros Prestados"));
+        jMenu2.add(mnuVerLibrosPrestados);
+
+        jMenu2.add(new javax.swing.JSeparator());
+
+        mnuSolicitarEquipo.setText("Solicitar Préstamo de Equipo");
+        mnuSolicitarEquipo.addActionListener(evt -> manejarAccionModulo("Solicitar Equipo"));
+        jMenu2.add(mnuSolicitarEquipo);
+
+        mnuSolicitarLibro.setText("Solicitar Préstamo de Libro");
+        mnuSolicitarLibro.addActionListener(evt -> manejarAccionModulo("Solicitar Libro"));
+        jMenu2.add(mnuSolicitarLibro);
+
         menuBar.add(jMenu2);
+
         jMenu3.setText("Reportes");
         menuBar.add(jMenu3);
         jMenu4.setText("Sanciones");
@@ -734,7 +939,11 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     private javax.swing.JDesktopPane escritorio;
     private javax.swing.JMenuItem fileMenu;
     private javax.swing.JMenuItem jMenu1;
-    private javax.swing.JMenuItem jMenu2;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuItem mnuVerEquiposPrestados;
+    private javax.swing.JMenuItem mnuVerLibrosPrestados;
+    private javax.swing.JMenuItem mnuSolicitarEquipo;
+    private javax.swing.JMenuItem mnuSolicitarLibro;
     private javax.swing.JMenuItem jMenu3;
     private javax.swing.JMenuItem jMenu4;
     private javax.swing.JMenuItem jMenu5;
