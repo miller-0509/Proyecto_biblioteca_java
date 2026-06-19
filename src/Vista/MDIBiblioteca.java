@@ -13,6 +13,7 @@ import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
+import java.awt.Image;
 import java.net.URL;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -166,13 +167,23 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         JPanel marca = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         marca.setOpaque(false);
 
-        JPanel insignia = new RoundedPanel(new Color(255, 245, 236), new Color(255, 220, 185), 18);
-        insignia.setPreferredSize(new Dimension(52, 52));
-        insignia.setLayout(new BorderLayout());
-        JLabel textoInsignia = new JLabel("SENA", SwingConstants.CENTER);
-        textoInsignia.setFont(new Font("SansSerif", Font.BOLD, 14));
-        textoInsignia.setForeground(new Color(225, 101, 20));
-        insignia.add(textoInsignia, BorderLayout.CENTER);
+        URL logoURL = getClass().getResource("/imagenes/logo_sena_verde.png");
+        JComponent logoComponente;
+        if (logoURL != null) {
+            ImageIcon iconoOriginal = new ImageIcon(logoURL);
+            int ancho = 140;
+            int alto = (int) Math.round((double) iconoOriginal.getIconHeight() / iconoOriginal.getIconWidth() * ancho);
+            Image escalada = iconoOriginal.getImage().getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+            logoComponente = new JLabel(new ImageIcon(escalada));
+        } else {
+            JLabel fallback = new JLabel("SENA", SwingConstants.CENTER);
+            fallback.setFont(new Font("SansSerif", Font.BOLD, 16));
+            fallback.setForeground(SENA_GREEN);
+            fallback.setOpaque(true);
+            fallback.setBackground(SENA_GREEN_LIGHT);
+            fallback.setBorder(new EmptyBorder(10, 18, 10, 18));
+            logoComponente = fallback;
+        }
 
         JPanel textos = new JPanel();
         textos.setOpaque(false);
@@ -189,7 +200,7 @@ public class MDIBiblioteca extends javax.swing.JFrame {
         textos.add(titulo);
         textos.add(subtitulo);
 
-        marca.add(insignia);
+        marca.add(logoComponente);
         marca.add(textos);
         return marca;
     }

@@ -13,6 +13,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.FocusAdapter;
@@ -150,8 +151,20 @@ public class Usuarios extends JInternalFrame {
             }
         });
 
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         acciones.setOpaque(false);
+
+        URL logoURL = getClass().getResource("/imagenes/logo_sena_verde.png");
+        if (logoURL != null) {
+            ImageIcon logoIcon = new ImageIcon(logoURL);
+            int ancho = 80;
+            int alto = (int) Math.round((double) logoIcon.getIconHeight() / logoIcon.getIconWidth() * ancho);
+            Image logoEscalado = logoIcon.getImage().getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
+            JLabel logoLabel = new JLabel(new ImageIcon(logoEscalado));
+            logoLabel.setBorder(new EmptyBorder(0, 0, 0, 8));
+            acciones.add(logoLabel);
+        }
+
         acciones.add(btnNuevo);
 
         encabezado.add(textos, BorderLayout.WEST);
