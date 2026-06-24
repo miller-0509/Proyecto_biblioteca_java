@@ -6,14 +6,17 @@ import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
@@ -32,6 +35,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -665,18 +669,146 @@ public class FRMSanciones extends JInternalFrame {
 
     private void verSeleccionada() {
         int row = tablaSanciones.getSelectedRow();
-        if (row < 0) {
-            return;
-        }
+        if (row < 0) return;
         int model = tablaSanciones.convertRowIndexToModel(row);
-        JOptionPane.showMessageDialog(this,
-                "Fecha: " + modeloSanciones.getValueAt(model, 1) + "\n"
-                + "Usuario: " + modeloSanciones.getValueAt(model, 2) + "\n"
-                + "Recurso: " + modeloSanciones.getValueAt(model, 3) + "\n"
-                + "Dias retraso: " + modeloSanciones.getValueAt(model, 4) + "\n"
-                + "Suspension: " + modeloSanciones.getValueAt(model, 5) + "\n"
-                + "Estado: " + modeloSanciones.getValueAt(model, 6),
-                "Detalle", JOptionPane.INFORMATION_MESSAGE);
+
+        String fecha = String.valueOf(modeloSanciones.getValueAt(model, 1));
+        String usuario = String.valueOf(modeloSanciones.getValueAt(model, 2));
+        String recurso = String.valueOf(modeloSanciones.getValueAt(model, 3));
+        String diasRetraso = String.valueOf(modeloSanciones.getValueAt(model, 4));
+        String suspension = String.valueOf(modeloSanciones.getValueAt(model, 5));
+        String estado = String.valueOf(modeloSanciones.getValueAt(model, 6));
+
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Detalle de Sanción", true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setSize(480, 420);
+        dialog.setLocationRelativeTo(this);
+        dialog.setResizable(false);
+
+        JPanel root = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(250, 252, 254));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        root.setBorder(new EmptyBorder(0, 0, 0, 0));
+
+        JPanel header = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(46, 170, 84));
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        header.setPreferredSize(new Dimension(0, 52));
+        header.setBorder(new EmptyBorder(0, 24, 0, 24));
+        JLabel lblHeader = new JLabel("Detalle de Sanción");
+        lblHeader.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblHeader.setForeground(Color.WHITE);
+        header.add(lblHeader, BorderLayout.WEST);
+
+        JPanel cuerpo = new JPanel();
+        cuerpo.setOpaque(false);
+        cuerpo.setLayout(new BoxLayout(cuerpo, BoxLayout.Y_AXIS));
+        cuerpo.setBorder(new EmptyBorder(24, 28, 16, 28));
+
+        cuerpo.add(crearCampoDetalle("Fecha", fecha));
+        cuerpo.add(Box.createVerticalStrut(14));
+        cuerpo.add(crearCampoDetalle("Usuario", usuario.replaceAll("<[^>]*>", " ")));
+        cuerpo.add(Box.createVerticalStrut(14));
+        cuerpo.add(crearCampoDetalle("Recurso", recurso.replaceAll("<[^>]*>", " ")));
+        cuerpo.add(Box.createVerticalStrut(14));
+        JPanel filaNumeros = new JPanel(new GridLayout(1, 2, 20, 0));
+        filaNumeros.setOpaque(false);
+        filaNumeros.add(crearCampoDetalle("Días Retraso", diasRetraso));
+        filaNumeros.add(crearCampoDetalle("Suspensión (días)", suspension));
+        filaNumeros.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        filaNumeros.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cuerpo.add(filaNumeros);
+        cuerpo.add(Box.createVerticalStrut(14));
+
+        JPanel pnlEstado = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        pnlEstado.setOpaque(false);
+        pnlEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnlEstado.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        JLabel lblEstadoLabel = new JLabel("Estado: ");
+        lblEstadoLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
+        lblEstadoLabel.setForeground(new Color(96, 105, 121));
+        JLabel lblEstadoValor = new JLabel(estado.toUpperCase());
+        lblEstadoValor.setFont(new Font("SansSerif", Font.BOLD, 12));
+        String estLower = estado.toLowerCase().trim();
+        if (estLower.contains("cumpl") || estLower.contains("condon") || estLower.contains("activa")) {
+            lblEstadoValor.setForeground(new Color(22, 163, 74));
+            lblEstadoValor.setOpaque(true);
+            lblEstadoValor.setBackground(new Color(220, 252, 231));
+            lblEstadoValor.setBorder(new EmptyBorder(3, 10, 3, 10));
+        } else {
+            lblEstadoValor.setForeground(new Color(220, 38, 38));
+            lblEstadoValor.setOpaque(true);
+            lblEstadoValor.setBackground(new Color(254, 226, 226));
+            lblEstadoValor.setBorder(new EmptyBorder(3, 10, 3, 10));
+        }
+        pnlEstado.add(lblEstadoLabel);
+        pnlEstado.add(lblEstadoValor);
+        cuerpo.add(pnlEstado);
+
+        JPanel pie = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 12));
+        pie.setOpaque(false);
+        pie.setBorder(new MatteBorder(1, 0, 0, 0, new Color(220, 226, 234)));
+        JButton btnAceptar = new JButton("Aceptar");
+        btnAceptar.setFont(new Font("SansSerif", Font.BOLD, 13));
+        btnAceptar.setForeground(new Color(46, 170, 84));
+        btnAceptar.setBackground(Color.WHITE);
+        btnAceptar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(46, 170, 84), 2),
+                new EmptyBorder(8, 28, 8, 28)));
+        btnAceptar.setFocusPainted(false);
+        btnAceptar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnAceptar.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) {
+                btnAceptar.setBackground(new Color(46, 170, 84));
+                btnAceptar.setForeground(Color.WHITE);
+            }
+            @Override public void mouseExited(MouseEvent e) {
+                btnAceptar.setBackground(Color.WHITE);
+                btnAceptar.setForeground(new Color(46, 170, 84));
+            }
+        });
+        btnAceptar.addActionListener(e -> dialog.dispose());
+        pie.add(btnAceptar);
+
+        root.add(header, BorderLayout.NORTH);
+        root.add(cuerpo, BorderLayout.CENTER);
+        root.add(pie, BorderLayout.SOUTH);
+
+        dialog.setContentPane(root);
+        dialog.setVisible(true);
+    }
+
+    private JPanel crearCampoDetalle(String label, String valor) {
+        JPanel p = new JPanel();
+        p.setOpaque(false);
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setAlignmentX(Component.LEFT_ALIGNMENT);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(new Color(96, 105, 121));
+        lbl.setBorder(new EmptyBorder(0, 0, 3, 0));
+
+        JLabel val = new JLabel(valor);
+        val.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        val.setForeground(new Color(28, 34, 45));
+
+        p.add(lbl);
+        p.add(val);
+        return p;
     }
 
     private void editarSeleccionada() {
