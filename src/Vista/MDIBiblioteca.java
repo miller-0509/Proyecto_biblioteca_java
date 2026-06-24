@@ -742,191 +742,40 @@ public class MDIBiblioteca extends javax.swing.JFrame {
     }
 
     private void abrirModuloEquipos() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof Equipos) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        Equipos equipos = new Equipos();
-        equipos.setVisible(true);
-        equipos.setClosable(true);
-        equipos.setIconifiable(true);
-        equipos.setMaximizable(true);
-        equipos.setResizable(true);
-        escritorio.add(equipos);
-        try {
-            equipos.setSelected(true);
-            equipos.setMaximum(true);
-        } catch (PropertyVetoException ex) {
-        }
-        equipos.toFront();
+        abrirFrame(Equipos.class, Equipos::new);
     }
 
     private void abrirModuloLibros() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof Libros) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        Libros libros = new Libros();
-        libros.setVisible(true);
-        libros.setClosable(true);
-        libros.setIconifiable(true);
-        libros.setMaximizable(true);
-        libros.setResizable(true);
-        escritorio.add(libros);
-        try {
-            libros.setSelected(true);
-            libros.setMaximum(true);
-        } catch (PropertyVetoException ex) {
-        }
-        libros.toFront();
+        abrirFrame(Libros.class, Libros::new);
     }
 
     private void abrirModuloUsuarios() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof Usuarios) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        Usuarios usuarios = new Usuarios();
-        usuarios.setVisible(true);
-        usuarios.setClosable(true);
-        usuarios.setIconifiable(true);
-        usuarios.setMaximizable(true);
-        usuarios.setResizable(true);
-        escritorio.add(usuarios);
-        try {
-            usuarios.setSelected(true);
-            usuarios.setMaximum(true);
-        } catch (PropertyVetoException ex) {
-        }
-        usuarios.toFront();
+        abrirFrame(Usuarios.class, Usuarios::new);
     }
 
     private void abrirModuloSanciones() {
-        System.out.println("[MDIBiblioteca] Abriendo modulo Sanciones...");
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMSanciones) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        try {
-            FRMSanciones sanciones = new FRMSanciones();
-            sanciones.setVisible(true);
-            sanciones.setClosable(true);
-            sanciones.setIconifiable(true);
-            sanciones.setMaximizable(true);
-            sanciones.setResizable(true);
-            escritorio.add(sanciones);
-            sanciones.setSelected(true);
-            sanciones.setMaximum(true);
-            sanciones.toFront();
-            System.out.println("[MDIBiblioteca] Modulo Sanciones abierto correctamente.");
-        } catch (PropertyVetoException ex) {
-        } catch (Exception ex) {
-            System.out.println("[MDIBiblioteca] Error abriendo modulo Sanciones: " + ex.getMessage());
-            ex.printStackTrace();
-        }
+        abrirFrame(FRMSanciones.class, FRMSanciones::new);
     }
 
     private void abrirModuloPrestamos() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMPrestamosEquipos) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        try {
-            FRMPrestamosEquipos prestamos = new FRMPrestamosEquipos();
-            prestamos.setVisible(true);
-            prestamos.setClosable(true);
-            prestamos.setIconifiable(true);
-            prestamos.setMaximizable(true);
-            prestamos.setResizable(true);
-            escritorio.add(prestamos);
-            prestamos.setSelected(true);
-            prestamos.setMaximum(true);
-            prestamos.toFront();
-        } catch (PropertyVetoException ex) {
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        abrirModuloPrestamosEquipos();
     }
 
     private void abrirModuloPrestamosEquipos() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMPrestamosEquipos) {
-                try {
-                    frame.setIcon(false);
-                    frame.setMaximum(true);
-                    frame.setSelected(true);
-                } catch (PropertyVetoException ex) {
-                }
-                frame.toFront();
-                return;
-            }
-        }
-
-        try {
-            FRMPrestamosEquipos prestamos = new FRMPrestamosEquipos();
-            prestamos.setVisible(true);
-            prestamos.setClosable(true);
-            prestamos.setIconifiable(true);
-            prestamos.setMaximizable(true);
-            prestamos.setResizable(true);
-            escritorio.add(prestamos);
-            prestamos.setSelected(true);
-            prestamos.setMaximum(true);
-            prestamos.toFront();
-        } catch (PropertyVetoException ex) {
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        abrirFrame(FRMPrestamosEquipos.class, FRMPrestamosEquipos::new);
     }
 
     private void abrirModuloPrestamosLibros() {
+        abrirFrame(FRMPrestamosLibros.class, FRMPrestamosLibros::new);
+    }
+
+    private void abrirModuloReportes() {
+        abrirFrame(FRMReportes.class, FRMReportes::new);
+    }
+
+    private void abrirFrame(Class<? extends JInternalFrame> clase, java.util.function.Supplier<? extends JInternalFrame> fabrica) {
         for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMPrestamosLibros) {
+            if (clase.isInstance(frame)) {
                 try {
                     frame.setIcon(false);
                     frame.setMaximum(true);
@@ -937,22 +786,19 @@ public class MDIBiblioteca extends javax.swing.JFrame {
                 return;
             }
         }
-
         try {
-            FRMPrestamosLibros prestamos = new FRMPrestamosLibros();
-            prestamos.setVisible(true);
-            prestamos.setClosable(true);
-            prestamos.setIconifiable(true);
-            prestamos.setMaximizable(true);
-            prestamos.setResizable(true);
-            escritorio.add(prestamos);
-            prestamos.setSelected(true);
-            prestamos.setMaximum(true);
-            prestamos.toFront();
+            JInternalFrame nuevo = fabrica.get();
+            nuevo.setVisible(true);
+            nuevo.setClosable(true);
+            nuevo.setIconifiable(true);
+            nuevo.setMaximizable(true);
+            nuevo.setResizable(true);
+            escritorio.add(nuevo);
+            nuevo.setSelected(true);
+            nuevo.setMaximum(true);
+            nuevo.toFront();
         } catch (PropertyVetoException ex) {
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        } catch (Exception ex) { ex.printStackTrace(); }
     }
 
     private void abrirFormularioNuevoEquipo() {
@@ -961,29 +807,6 @@ public class MDIBiblioteca extends javax.swing.JFrame {
 
     private void abrirFormularioNuevoLibro() {
         new FRMNuevoPrestamoLibro(this, null).setVisible(true);
-    }
-
-    private void abrirModuloReportes() {
-        for (JInternalFrame frame : escritorio.getAllFrames()) {
-            if (frame instanceof FRMReportes) {
-                try { frame.setIcon(false); frame.setSelected(true); } catch (PropertyVetoException ex) {}
-                frame.toFront();
-                return;
-            }
-        }
-        try {
-            FRMReportes reportes = new FRMReportes();
-            reportes.setVisible(true);
-            reportes.setClosable(true);
-            reportes.setIconifiable(true);
-            reportes.setMaximizable(true);
-            reportes.setResizable(true);
-            escritorio.add(reportes);
-            reportes.setSelected(true);
-            reportes.setMaximum(true);
-            reportes.toFront();
-        } catch (PropertyVetoException ex) {
-        } catch (Exception ex) { ex.printStackTrace(); }
     }
 
     public static void main(String args[]) {
